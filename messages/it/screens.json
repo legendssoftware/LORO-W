@@ -992,11 +992,11 @@
     "leave": {
       "header": {
         "title": "Ferie",
-        "description": "Richiedi ferie, filtra la posta in arrivo e approva, rifiuta o annulla una richiesta."
+        "description": "Richiedi ferie, filtra la posta in arrivo, poi approva, rifiuta o annulla una richiesta."
       },
       "actions": {
         "title": "Richiedi ferie",
-        "description": "Clicca Richiedi ferie. Scegli il tipo, le date e invia per una decisione."
+        "description": "Clicca Richiedi ferie. Scegli il tipo e le date, poi invia per una decisione."
       },
       "filters": {
         "title": "Filtra la posta in arrivo",
@@ -1200,15 +1200,15 @@
     "approvals": {
       "header": {
         "title": "Approvazioni",
-        "description": "Rivedi le richieste in sospeso, esamina i moduli di assunzione e approva o rifiuta dal web."
+        "description": "Filtra per stato o tipo, presenta una richiesta generica con Nuova richiesta, poi apri una scheda per approvare o rifiutare. I moduli di assunzione si aprono dalla stessa scheda; all'approvazione partono i webhook in uscita."
       },
       "toolbar": {
-        "title": "Filtra e presenta una richiesta",
-        "description": "Cerca per titolo o riferimento, poi filtra per stato o tipo. Nuova richiesta presenta una richiesta generica. Le mie richieste carica quelle che hai inviato."
+        "title": "Filtra e Nuova richiesta",
+        "description": "Filtra per stato o tipo. Nuova richiesta presenta un'approvazione generica. Le mie richieste mostra quelle che hai inviato."
       },
       "list": {
-        "title": "Apri una richiesta",
-        "description": "Clicca una scheda per approvare o rifiutare. I moduli di assunzione si aprono dalla stessa scheda."
+        "title": "Apri una scheda",
+        "description": "Apri una scheda per approvare o rifiutare. I moduli di assunzione si aprono dalla stessa scheda. All'approvazione partono i webhook in uscita."
       }
     },
     "payslips": {
@@ -1264,7 +1264,7 @@
     "deliveries": {
       "header": {
         "title": "Consegne",
-        "description": "Assegna un ordine di vendita ERP aperto a un autista. La prova di consegna firmata appare qui una volta che l'autista registra la fermata."
+        "description": "Assegna un ordine di vendita ERP aperto a un autista, filtra l'elenco, poi apri una riga per il percorso e la prova di consegna."
       },
       "toolbar": {
         "title": "Filtra consegne",
@@ -1272,11 +1272,11 @@
       },
       "assign": {
         "title": "Assegna consegna",
-        "description": "Clicca Assegna consegna. Scegli un ordine di vendita aperto e l'autista che effettuerà la fermata."
+        "description": "Clicca Assegna consegna. Scegli un ordine di vendita ERP aperto e l'autista che effettuerà la fermata."
       },
       "list": {
         "title": "Apri una consegna",
-        "description": "Clicca una riga per il percorso, la valutazione e la prova di consegna firmata."
+        "description": "Clicca una riga per il percorso e la prova di consegna firmata (POD)."
       }
     },
     "store-operations": {

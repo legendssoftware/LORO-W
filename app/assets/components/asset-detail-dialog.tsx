@@ -106,6 +106,20 @@ export function AssetDetailDialog({
             {asset.registrationPlate ? (
               <ModalRow label="Registration" value={asset.registrationPlate} />
             ) : null}
+            {asset.category === 'VEHICLE' ? (
+              <>
+                {asset.vehicleSizeClass ? (
+                  <ModalRow label="Size" value={asset.vehicleSizeClass} />
+                ) : null}
+                {asset.tonnageKg != null ? (
+                  <ModalRow label="Tonnage / payload" value={`${asset.tonnageKg} kg`} />
+                ) : null}
+                {asset.tankCapacityLitres != null ? (
+                  <ModalRow label="Tank" value={`${asset.tankCapacityLitres} L`} />
+                ) : null}
+                {asset.fuelType ? <ModalRow label="Fuel" value={asset.fuelType} /> : null}
+              </>
+            ) : null}
             <Separator />
             <ModalRow label="Purchased" value={formatDate(asset.purchaseDate)} />
             <ModalRow

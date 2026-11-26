@@ -3,7 +3,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useApiClient } from '@/api/hooks/use-api-client';
 import {
+  acceptRoutePlan,
   cancelDelivery,
+  createDeliveriesBatch,
   createDelivery,
   getDelivery,
   getDeliveryPdf,
@@ -11,14 +13,18 @@ import {
   listDeliveries,
   listDrivers,
   markRouteReady,
+  planRoute,
 } from '@/api/endpoints/epod';
 import type {
+  AcceptRoutePlanBody,
   AssignableOrder,
   CancelDeliveryBody,
+  CreateDeliveriesBatchBody,
   CreateDeliveryBody,
   DeliveryListQuery,
   DeliveryStatus,
   DeliverySummary,
+  PlanRouteBody,
   ReadyRouteBody,
 } from '@/api/types/epod';
 
@@ -129,12 +135,46 @@ export function useAssignDeliveryMutation() {
   });
 }
 
+/** Assigns up to 20 open ERP sales orders to one truck and route. */
+export function useAssignDeliveriesBatchMutation() {
+  const client = useApiClient();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: CreateDeliveriesBatchBody) => createDeliveriesBatch(client, body),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [...EPOD_QUERY_KEY, 'list'] });
+      queryClient.invalidateQueries({ queryKey: [...EPOD_QUERY_KEY, 'assignable-orders'] });
+    },
+  });
+}
+
 /** Marks one driver route ready and sends the arrival window once. */
 export function useMarkRouteReadyMutation() {
   const client = useApiClient();
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (body: ReadyRouteBody) => markRouteReady(client, body),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [...EPOD_QUERY_KEY, 'list'] });
+      queryClient.invalidateQueries({ queryKey: [...EPOD_QUERY_KEY, 'detail'] });
+    },
+  });
+}
+
+/** Google Directions optimize preview for a driver-day-route. Does not persist. */
+export function usePlanRouteMutation() {
+  const client = useApiClient();
+  return useMutation({
+    mutationFn: (body: PlanRouteBody) => planRoute(client, body),
+  });
+}
+
+/** Persists an accepted stop order and refreshes delivery lists. */
+export function useAcceptRoutePlanMutation() {
+  const client = useApiClient();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (body: AcceptRoutePlanBody) => acceptRoutePlan(client, body),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [...EPOD_QUERY_KEY, 'list'] });
       queryClient.invalidateQueries({ queryKey: [...EPOD_QUERY_KEY, 'detail'] });

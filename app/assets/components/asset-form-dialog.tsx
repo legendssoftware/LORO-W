@@ -52,6 +52,7 @@ const SIZE_OPTIONS: { value: VehicleSizeClass; label: string }[] = [
   { value: 'suv', label: 'SUV' },
   { value: 'bakkie', label: 'Bakkie' },
   { value: 'van', label: 'Van' },
+  { value: 'truck', label: 'Truck' },
   { value: 'other', label: 'Other' },
 ];
 
@@ -67,6 +68,7 @@ const assetFormSchema = z
     fuelType: z.string(),
     ratedKmPerLitre: z.string(),
     tankCapacityLitres: z.string(),
+    tonnageKg: z.string(),
     registrationPlate: z.string(),
     purchaseDate: z.string().min(1, 'Purchase date is required'),
     hasInsurance: z.boolean(),
@@ -128,6 +130,7 @@ function emptyValues(ownerUid: string, branchUid: string): AssetFormValues {
     fuelType: 'petrol',
     ratedKmPerLitre: '',
     tankCapacityLitres: '',
+    tonnageKg: '',
     registrationPlate: '',
     purchaseDate: todayInput(),
     hasInsurance: true,
@@ -150,6 +153,7 @@ function assetToValues(asset: AssetRecord): AssetFormValues {
     fuelType: asset.fuelType ?? 'petrol',
     ratedKmPerLitre: asset.ratedKmPerLitre != null ? String(asset.ratedKmPerLitre) : '',
     tankCapacityLitres: asset.tankCapacityLitres != null ? String(asset.tankCapacityLitres) : '',
+    tonnageKg: asset.tonnageKg != null ? String(asset.tonnageKg) : '',
     registrationPlate: asset.registrationPlate?.trim() ?? '',
     purchaseDate: toDateInput(asset.purchaseDate) || todayInput(),
     hasInsurance: asset.hasInsurance ?? asset.category !== 'VEHICLE',
@@ -179,6 +183,7 @@ function toPayload(
 ): CreateAssetPayload {
   const modelYear = Number(values.modelYear);
   const tank = Number(values.tankCapacityLitres);
+  const tonnage = Number(values.tonnageKg);
   const isVehicle = values.category === 'VEHICLE';
   const insuranceRequired = !isVehicle || values.hasInsurance;
   return {
@@ -200,6 +205,7 @@ function toPayload(
           fuelType: values.fuelType as FuelType,
           ratedKmPerLitre: Number(values.ratedKmPerLitre),
           tankCapacityLitres: Number.isFinite(tank) && tank >= 0 ? tank : undefined,
+          tonnageKg: Number.isFinite(tonnage) && tonnage >= 0 ? tonnage : undefined,
           registrationPlate: values.registrationPlate.trim() || undefined,
         }
       : {}),
@@ -465,6 +471,32 @@ export function AssetFormDialog({
                         <FormLabel>Rated km/L</FormLabel>
                         <FormControl>
                           <Input inputMode="decimal" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="tankCapacityLitres"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Tank capacity (L)</FormLabel>
+                        <FormControl>
+                          <Input inputMode="decimal" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="tonnageKg"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Tonnage / payload (kg)</FormLabel>
+                        <FormControl>
+                          <Input inputMode="decimal" placeholder="e.g. 3500" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>

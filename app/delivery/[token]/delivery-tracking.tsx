@@ -95,7 +95,7 @@ export function DeliveryTracking({ token }: DeliveryTrackingProps) {
           <div>
             <h1 className="text-xl font-semibold tracking-tight sm:text-2xl">Your delivery</h1>
             <p className="text-muted-foreground mt-1 text-sm">
-              {delivery?.clientName || 'Track this stop and rate it once it has been delivered.'}
+              Track this stop and rate it once it has been delivered.
             </p>
           </div>
           {delivery ? (
@@ -126,9 +126,9 @@ export function DeliveryTracking({ token }: DeliveryTrackingProps) {
               </CardHeader>
               <CardContent className="flex flex-col gap-2">
                 <DetailRow label="Status" value={delivery.statusLabel} />
-                <DetailRow label="Driver" value={delivery.driverFirstName} />
+                <DetailRow label="Driver" value={delivery.driverFirstName || 'Your driver'} />
                 <DetailRow label="Invoice No." value={delivery.invoiceNumber} />
-                <DetailRow label="Customer" value={delivery.clientName || '—'} />
+                <DetailRow label="Your stop" value={delivery.clientName || '—'} />
                 <DetailRow
                   label="Estimated arrival"
                   value={formatArrivalWindow(
@@ -146,8 +146,7 @@ export function DeliveryTracking({ token }: DeliveryTrackingProps) {
               </CardHeader>
               <CardContent className="flex flex-col gap-3">
                 <DeliveryTrackingMap
-                  clientName={delivery.clientName}
-                  driverFirstName={delivery.driverFirstName}
+                  routeStops={delivery.routeStops ?? []}
                   latitude={delivery.latitude}
                   longitude={delivery.longitude}
                   arrivalLat={delivery.arrivalLat}

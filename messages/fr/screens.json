@@ -992,11 +992,11 @@
     "leave": {
       "header": {
         "title": "Congés",
-        "description": "Demandez des congés, filtrez la boîte de réception et approuvez, refusez ou annulez une demande."
+        "description": "Demandez des congés, filtrez la boîte de réception, puis approuvez, refusez ou annulez une demande."
       },
       "actions": {
         "title": "Demander un congé",
-        "description": "Cliquez sur Demander un congé. Choisissez le type, les dates et envoyez pour décision."
+        "description": "Cliquez sur Demander un congé. Choisissez le type et les dates, puis envoyez pour décision."
       },
       "filters": {
         "title": "Filtrer la boîte de réception",
@@ -1200,15 +1200,15 @@
     "approvals": {
       "header": {
         "title": "Approbations",
-        "description": "Examinez les demandes en attente, inspectez les formulaires d'intégration et approuvez ou refusez depuis le web."
+        "description": "Filtrez par statut ou type, déposez une demande générale avec Nouvelle demande, puis ouvrez une carte pour approuver ou refuser. Les formulaires d'intégration s'ouvrent depuis la même carte ; les webhooks sortants partent à l'approbation."
       },
       "toolbar": {
-        "title": "Filtrer et déposer une demande",
-        "description": "Recherchez par titre ou référence, puis filtrez par statut ou type. Nouvelle demande dépose une demande générale. Mes demandes charge celles que vous avez soumises."
+        "title": "Filtrer et Nouvelle demande",
+        "description": "Filtrez par statut ou type. Nouvelle demande dépose une approbation générale. Mes demandes montre celles que vous avez soumises."
       },
       "list": {
-        "title": "Ouvrir une demande",
-        "description": "Cliquez sur une carte pour l'approuver ou la refuser. Les formulaires d'intégration s'ouvrent depuis la même carte."
+        "title": "Ouvrir une carte",
+        "description": "Ouvrez une carte pour approuver ou refuser. Les formulaires d'intégration s'ouvrent depuis la même carte. À l'approbation, les webhooks sortants partent."
       }
     },
     "payslips": {
@@ -1264,7 +1264,7 @@
     "deliveries": {
       "header": {
         "title": "Livraisons",
-        "description": "Assignez une commande de vente ERP ouverte à un chauffeur. La preuve de livraison signée apparaît ici une fois l'arrêt enregistré."
+        "description": "Assignez une commande de vente ERP ouverte à un chauffeur, filtrez la liste, puis ouvrez une ligne pour l'itinéraire et la preuve de livraison."
       },
       "toolbar": {
         "title": "Filtrer les livraisons",
@@ -1272,11 +1272,11 @@
       },
       "assign": {
         "title": "Assigner une livraison",
-        "description": "Cliquez sur Assigner une livraison. Choisissez une commande de vente ouverte et le chauffeur qui fera l'arrêt."
+        "description": "Cliquez sur Assigner une livraison. Choisissez une commande de vente ERP ouverte et le chauffeur qui fera l'arrêt."
       },
       "list": {
         "title": "Ouvrir une livraison",
-        "description": "Cliquez sur une ligne pour l'itinéraire, la note et la preuve de livraison signée."
+        "description": "Cliquez sur une ligne pour l'itinéraire et la preuve de livraison signée (POD)."
       }
     },
     "store-operations": {

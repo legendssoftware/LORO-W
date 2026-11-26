@@ -1,12 +1,11 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { PackageCheck, PackagePlus } from 'lucide-react';
+import { PackageCheck, PackagePlus, Route } from 'lucide-react';
 import {
   filterDeliveries,
   useDeliveries,
   useDeliveryDrivers,
-  useMarkRouteReadyMutation,
   useSessionSync,
   useTokenReady,
 } from '@/api/hooks';
@@ -29,6 +28,14 @@ import { cn } from '@/lib/utils';
 import { AssignDeliveryDialog } from '@/app/deliveries/assign-delivery-dialog';
 import { DeliveryDetailDialog } from '@/app/deliveries/delivery-detail-dialog';
 import { DeliveriesFiltersBar } from '@/app/deliveries/deliveries-filters-bar';
+import {
+  MarkLoadedDialog,
+  type MarkLoadedRouteTarget,
+} from '@/app/deliveries/mark-loaded-dialog';
+import {
+  PlanRouteDialog,
+  type PlanRouteTarget,
+} from '@/app/deliveries/plan-route-dialog';
 import {
   deliveryStatusClassName,
   formatArrivalWindow,
@@ -56,17 +63,9 @@ function canMarkDeliveryReady(row: DeliverySummary): boolean {
   );
 }
 
-/** True when this row is the exact route the mark-ready mutation targeted. */
-function isMarkReadyTarget(
-  row: DeliverySummary,
-  target: { driverUid: number; routeCode: string; scheduledDate: string } | undefined,
-): boolean {
-  if (!target) return false;
-  return (
-    target.driverUid === row.driverUid &&
-    target.routeCode === row.routeCode &&
-    target.scheduledDate === row.scheduledDate
-  );
+/** Same key as Mark loaded — Google can propose a stop order for open routes. */
+function canPlanRoute(row: DeliverySummary): boolean {
+  return canMarkDeliveryReady(row);
 }
 
 export function DeliveriesListContent() {
@@ -82,9 +81,10 @@ export function DeliveriesListContent() {
   const [search, setSearch] = useState('');
   const [assignOpen, setAssignOpen] = useState(false);
   const [selectedUid, setSelectedUid] = useState<number | null>(null);
+  const [markLoadedTarget, setMarkLoadedTarget] = useState<MarkLoadedRouteTarget | null>(null);
+  const [planRouteTarget, setPlanRouteTarget] = useState<PlanRouteTarget | null>(null);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState<VisitsPageSize>(() => readStoredPageSize(DELIVERIES_PAGE_SIZE_KEY));
-  const markReady = useMarkRouteReadyMutation();
 
   const query = useDeliveries(
     {
@@ -135,6 +135,25 @@ export function DeliveriesListContent() {
       </div>
 
       {canDispatch ? <AssignDeliveryDialog open={assignOpen} onOpenChange={setAssignOpen} /> : null}
+      {canDispatch ? (
+        <MarkLoadedDialog
+          open={markLoadedTarget != null}
+          onOpenChange={(open) => {
+            if (!open) setMarkLoadedTarget(null);
+          }}
+          target={markLoadedTarget}
+          deliveries={query.data?.deliveries ?? []}
+        />
+      ) : null}
+      {canDispatch ? (
+        <PlanRouteDialog
+          open={planRouteTarget != null}
+          onOpenChange={(open) => {
+            if (!open) setPlanRouteTarget(null);
+          }}
+          target={planRouteTarget}
+        />
+      ) : null}
       <DeliveryDetailDialog
         uid={selectedUid}
         open={selectedUid != null}
@@ -236,6 +255,14 @@ export function DeliveriesListContent() {
                       {row.stopSequence != null ? (
                         <span className="text-muted-foreground block text-xs">Stop {row.stopSequence}</span>
                       ) : null}
+                      {row.truckRegistration?.trim() ? (
+                        <span className="text-muted-foreground block text-xs">{row.truckRegistration.trim()}</span>
+                      ) : null}
+                      {row.departureFuelLitres != null ? (
+                        <span className="text-muted-foreground block text-xs">
+                          {row.departureFuelLitres} L filled
+                        </span>
+                      ) : null}
                     </TableCell>
                     <TableCell className="text-sm">
                       {formatArrivalWindow(row.estimatedWindowStart, row.estimatedWindowEnd, row.scheduledDate)}
@@ -249,44 +276,62 @@ export function DeliveriesListContent() {
                     <TableCell className="text-muted-foreground text-sm">{row.itemSummary || '—'}</TableCell>
                     {canDispatch ? (
                       <TableCell>
-                        {row.routeReady ? (
-                          <Button
-                            type="button"
-                            variant="outline"
-                            className={cn('h-9', loadedReadyButtonClassName)}
-                            disabled
-                            aria-label="Loaded — warehouse load already acknowledged"
-                            title="Warehouse load is marked loaded and ready"
-                          >
-                            <PackageCheck className="size-4 shrink-0" aria-hidden />
-                            Loaded
-                          </Button>
-                        ) : canMarkDeliveryReady(row) ? (
-                          <Button
-                            type="button"
-                            variant="outline"
-                            className={cn('h-9', markLoadedButtonClassName)}
-                            disabled={markReady.isPending && isMarkReadyTarget(row, markReady.variables)}
-                            aria-label="Mark loaded — warehouse load acknowledgment"
-                            title="Marks the warehouse load as loaded and ready, then texts the customer and driver"
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              void markReady.mutate({
-                                driverUid: row.driverUid,
-                                routeCode: row.routeCode,
-                                scheduledDate: row.scheduledDate,
-                              });
-                            }}
-                          >
-                            <PackageCheck className="size-4 shrink-0" aria-hidden />
-                            Mark loaded
-                          </Button>
-                        ) : (
-                          '—'
-                        )}
-                        {markReady.isError && isMarkReadyTarget(row, markReady.variables) ? (
-                          <p className="text-destructive mt-1 text-xs">{getQueryErrorMessage(markReady.error)}</p>
-                        ) : null}
+                        <div className="flex flex-wrap items-center gap-2">
+                          {row.routeReady ? (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              className={cn('h-9', loadedReadyButtonClassName)}
+                              disabled
+                              aria-label="Loaded — warehouse load already acknowledged"
+                              title="Warehouse load is marked loaded and ready"
+                            >
+                              <PackageCheck className="size-4 shrink-0" aria-hidden />
+                              Loaded
+                            </Button>
+                          ) : canMarkDeliveryReady(row) ? (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              className={cn('h-9', markLoadedButtonClassName)}
+                              aria-label="Mark loaded — warehouse load acknowledgment"
+                              title="Opens the invoice load checklist, then texts the customer and driver"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                setMarkLoadedTarget({
+                                  driverUid: row.driverUid,
+                                  routeCode: row.routeCode,
+                                  scheduledDate: row.scheduledDate,
+                                });
+                              }}
+                            >
+                              <PackageCheck className="size-4 shrink-0" aria-hidden />
+                              Mark loaded
+                            </Button>
+                          ) : null}
+                          {canPlanRoute(row) ? (
+                            <Button
+                              type="button"
+                              variant="outline"
+                              className="h-9"
+                              aria-label="Plan route — Google-optimized stop order"
+                              title="Opens a proposed stop order from Google Directions"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                setPlanRouteTarget({
+                                  driverUid: row.driverUid,
+                                  routeCode: row.routeCode,
+                                  scheduledDate: row.scheduledDate,
+                                });
+                              }}
+                            >
+                              <Route className="size-4 shrink-0" aria-hidden />
+                              Plan route
+                            </Button>
+                          ) : !row.routeReady && !canMarkDeliveryReady(row) ? (
+                            '—'
+                          ) : null}
+                        </div>
                       </TableCell>
                     ) : null}
                   </TableRow>

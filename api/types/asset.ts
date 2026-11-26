@@ -6,6 +6,7 @@ export type VehicleSizeClass =
   | 'suv'
   | 'bakkie'
   | 'van'
+  | 'truck'
   | 'other';
 
 export type FuelType = 'petrol' | 'diesel';
@@ -22,6 +23,8 @@ export interface AssetRecord {
   fuelType?: FuelType | null;
   ratedKmPerLitre?: number | null;
   tankCapacityLitres?: number | null;
+  /** Rated payload capacity in kilograms (delivery trucks). */
+  tonnageKg?: number | null;
   registrationPlate?: string | null;
   purchaseDate?: string;
   hasInsurance?: boolean;
@@ -60,6 +63,7 @@ export interface CreateAssetPayload {
   fuelType?: FuelType;
   ratedKmPerLitre?: number;
   tankCapacityLitres?: number;
+  tonnageKg?: number;
   registrationPlate?: string;
   purchaseDate: string;
   hasInsurance: boolean;

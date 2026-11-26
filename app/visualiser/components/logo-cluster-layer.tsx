@@ -430,8 +430,7 @@ export function LogoClusterLayer({
               80,
               64,
             ],
-            'circle-stroke-width': 1.5,
-            'circle-stroke-color': '#ffffff',
+            'circle-stroke-width': 0,
             'circle-opacity': 0.9,
           },
         });
@@ -443,6 +442,7 @@ export function LogoClusterLayer({
           filter: ['has', 'point_count'],
           layout: {
             'text-field': '{point_count_abbreviated}',
+            'text-font': ['Open Sans Bold'],
             'text-size': 14,
             'text-allow-overlap': true,
           },

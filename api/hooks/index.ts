@@ -340,6 +340,7 @@ export {
   canCancelDelivery,
   filterAssignableOrders,
   filterDeliveries,
+  useAssignDeliveriesBatchMutation,
   useAssignDeliveryMutation,
   useAssignableOrders,
   useCancelDeliveryMutation,
@@ -347,7 +348,9 @@ export {
   useDelivery,
   useDeliveryDrivers,
   useDeliveryPdfMutation,
+  useAcceptRoutePlanMutation,
   useMarkRouteReadyMutation,
+  usePlanRouteMutation,
 } from './use-epod';
 export {
   TAKEOFF_QUERY_KEY,

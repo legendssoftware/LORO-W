@@ -992,11 +992,11 @@
     "leave": {
       "header": {
         "title": "Leave",
-        "description": "Request time off, filter the inbox, and approve, reject, or cancel a request."
+        "description": "Request time off, filter the inbox, then approve, reject, or cancel a request."
       },
       "actions": {
         "title": "Request leave",
-        "description": "Click Request leave. Choose the type, the dates, and send it for a decision."
+        "description": "Click Request leave. Choose the type and dates, then send it for a decision."
       },
       "filters": {
         "title": "Filter the inbox",
@@ -1200,15 +1200,15 @@
     "approvals": {
       "header": {
         "title": "Approvals",
-        "description": "Review pending requests, inspect employee intake forms, and approve or reject from the web."
+        "description": "Filter by status or type, file a general request with New request, then open a card to approve or reject. Intake forms open from the same card; outbound webhooks fire when approved."
       },
       "toolbar": {
-        "title": "Filter and file a request",
-        "description": "Search by title or reference, then filter by status or type. New request files a general request. My requests loads the ones you submitted."
+        "title": "Filter and New request",
+        "description": "Filter by status or type. New request files a general approval. My requests shows the ones you submitted."
       },
       "list": {
-        "title": "Open a request",
-        "description": "Click a card to approve or reject it. Intake forms open from the same card."
+        "title": "Open a card",
+        "description": "Open a card to approve or reject. Intake forms open from the same card. When approved, outbound webhooks fire."
       }
     },
     "payslips": {
@@ -1264,7 +1264,7 @@
     "deliveries": {
       "header": {
         "title": "Deliveries",
-        "description": "Assign an open ERP sales order to a driver. The signed proof of delivery appears here once the driver records the stop."
+        "description": "Assign an open ERP sales order to a driver, filter the list, then open a row for the route and proof of delivery."
       },
       "toolbar": {
         "title": "Filter deliveries",
@@ -1272,11 +1272,11 @@
       },
       "assign": {
         "title": "Assign delivery",
-        "description": "Click Assign delivery. Pick an open sales order and the driver who will run the stop."
+        "description": "Click Assign delivery. Pick an open ERP sales order and the driver who will run the stop."
       },
       "list": {
         "title": "Open a delivery",
-        "description": "Click a row for the route, the rating, and the signed proof of delivery."
+        "description": "Click a row for the route and the signed proof of delivery (POD)."
       }
     },
     "store-operations": {

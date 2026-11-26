@@ -1,6 +1,7 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
+import type { PublicRouteStop } from '@/api/types/epod';
 import {
   Map as MapView,
   MapControls,
@@ -10,6 +11,7 @@ import {
   MarkerLabel,
   useMap,
 } from '@/components/ui/map';
+import { cn } from '@/lib/utils';
 
 interface MapPoint {
   lat: number;
@@ -17,8 +19,7 @@ interface MapPoint {
 }
 
 interface DeliveryTrackingMapProps {
-  clientName: string;
-  driverFirstName: string;
+  routeStops: PublicRouteStop[];
   latitude: number | null;
   longitude: number | null;
   arrivalLat: number | null;
@@ -55,7 +56,11 @@ function isSamePoint(left: MapPoint, right: MapPoint): boolean {
   );
 }
 
-function FitBothPoints({
+function stopLabel(stop: PublicRouteStop): string {
+  return stop.isCurrent ? 'Your stop' : `#${stop.stopNumber}`;
+}
+
+function FitMapBounds({
   bounds,
 }: {
   bounds: [[number, number], [number, number]] | null;
@@ -71,38 +76,76 @@ function FitBothPoints({
 }
 
 /**
- * One-stop map using the same MapLibre view, markers, and controls as the visits report.
+ * Bolt-style route map: numbered pins only. Other stops show #N, never a client name.
  */
 export function DeliveryTrackingMap({
-  clientName,
-  driverFirstName,
+  routeStops,
   latitude,
   longitude,
   arrivalLat,
   arrivalLng,
 }: DeliveryTrackingMapProps) {
-  const drop = parseStoredCoords(latitude, longitude);
   const driver = parseStoredCoords(arrivalLat, arrivalLng);
-  const destination = clientName.trim() || 'Delivery address';
-  const driverLabel = driverFirstName.trim() || 'Driver';
 
-  if (!drop) {
+  const pins = useMemo(() => {
+    const fromRoute = routeStops
+      .map((stop) => {
+        const point = parseStoredCoords(stop.latitude, stop.longitude);
+        if (!point) return null;
+        return { stop, point };
+      })
+      .filter((row): row is { stop: PublicRouteStop; point: MapPoint } => row != null);
+
+    if (fromRoute.length > 0) return fromRoute;
+    const fallbackDrop = parseStoredCoords(latitude, longitude);
+    if (!fallbackDrop) return [];
+    return [
+      {
+        stop: {
+          stopNumber: 1,
+          latitude: fallbackDrop.lat,
+          longitude: fallbackDrop.lng,
+          isCurrent: true,
+        },
+        point: fallbackDrop,
+      },
+    ];
+  }, [latitude, longitude, routeStops]);
+
+  const bounds = useMemo(() => {
+    const points: MapPoint[] = pins.map((row) => row.point);
+    if (driver) points.push(driver);
+    if (points.length < 2) return null;
+    let minLng = points[0].lng;
+    let maxLng = points[0].lng;
+    let minLat = points[0].lat;
+    let maxLat = points[0].lat;
+    for (const point of points) {
+      minLng = Math.min(minLng, point.lng);
+      maxLng = Math.max(maxLng, point.lng);
+      minLat = Math.min(minLat, point.lat);
+      maxLat = Math.max(maxLat, point.lat);
+    }
+    return [
+      [minLng, minLat],
+      [maxLng, maxLat],
+    ] as [[number, number], [number, number]];
+  }, [driver, pins]);
+
+  const currentPin = pins.find((row) => row.stop.isCurrent) ?? pins[0] ?? null;
+
+  if (!currentPin) {
     return <p className="text-muted-foreground text-sm">Location is not available for this delivery.</p>;
   }
 
+  const drop = currentPin.point;
   const showRoute = driver != null && !isSamePoint(drop, driver);
-  const bounds = showRoute && driver
-    ? ([
-        [Math.min(drop.lng, driver.lng), Math.min(drop.lat, driver.lat)],
-        [Math.max(drop.lng, driver.lng), Math.max(drop.lat, driver.lat)],
-      ] as [[number, number], [number, number]])
-    : undefined;
 
   return (
     <div className="relative h-[280px] w-full overflow-hidden rounded-lg border border-border">
       <MapView center={[drop.lng, drop.lat]} zoom={14} className="size-full">
         <MapControls showZoom showFullscreen />
-        <FitBothPoints bounds={bounds ?? null} />
+        <FitMapBounds bounds={bounds} />
         {showRoute && driver ? (
           <MapRoute
             id="delivery-route"
@@ -117,27 +160,43 @@ export function DeliveryTrackingMap({
             interactive={false}
           />
         ) : null}
-        <MapMarker longitude={drop.lng} latitude={drop.lat}>
-          <MarkerContent>
-            <span
-              className="block size-3 rounded-full border-2 border-white bg-violet-600"
-              role="img"
-              aria-label={`Delivery destination, ${destination}`}
-            />
-            <MarkerLabel position="top" className="bg-background/90 border-border max-w-[10rem] truncate rounded border px-1.5 py-0.5">
-              {destination}
-            </MarkerLabel>
-          </MarkerContent>
-        </MapMarker>
+        {pins.map(({ stop, point }) => {
+          const label = stopLabel(stop);
+          return (
+            <MapMarker key={`${stop.stopNumber}-${point.lat}-${point.lng}`} longitude={point.lng} latitude={point.lat}>
+              <MarkerContent>
+                <span
+                  className={cn(
+                    'flex size-7 items-center justify-center rounded-full border-2 border-white text-xs font-semibold shadow-sm',
+                    stop.isCurrent ? 'bg-violet-600 text-white' : 'bg-slate-600 text-white',
+                  )}
+                  role="img"
+                  aria-label={label}
+                >
+                  {stop.stopNumber}
+                </span>
+                <MarkerLabel
+                  position="top"
+                  className="bg-background/90 border-border max-w-[10rem] truncate rounded border px-1.5 py-0.5"
+                >
+                  {label}
+                </MarkerLabel>
+              </MarkerContent>
+            </MapMarker>
+          );
+        })}
         {driver ? (
           <MapMarker longitude={driver.lng} latitude={driver.lat}>
             <MarkerContent>
               <span
                 className="block size-3 rounded-full border-2 border-white bg-emerald-600"
                 role="img"
-                aria-label={`Arrival point, ${driverLabel}`}
+                aria-label="Arrival point"
               />
-              <MarkerLabel position="bottom" className="bg-background/90 border-border max-w-[10rem] truncate rounded border px-1.5 py-0.5">
+              <MarkerLabel
+                position="bottom"
+                className="bg-background/90 border-border max-w-[10rem] truncate rounded border px-1.5 py-0.5"
+              >
                 Arrived
               </MarkerLabel>
             </MarkerContent>

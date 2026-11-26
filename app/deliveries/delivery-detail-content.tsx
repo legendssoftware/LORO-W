@@ -1,18 +1,20 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ExternalLink, FileText, PackageCheck } from 'lucide-react';
+import { ExternalLink, FileText, PackageCheck, Route } from 'lucide-react';
 import {
   canCancelDelivery,
   useCancelDeliveryMutation,
+  useDeliveries,
   useDelivery,
   useDeliveryPdfMutation,
-  useMarkRouteReadyMutation,
   useSessionSync,
+  useTokenReady,
 } from '@/api/hooks';
 import { canDispatchDeliveries } from '@/lib/access';
-import type { CancelDeliveryBody } from '@/api/types/epod';
+import type { CancelDeliveryBody, DeliverySummary } from '@/api/types/epod';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -28,6 +30,14 @@ import {
 import { getQueryErrorMessage } from '@/lib/api/query-error';
 import { cn } from '@/lib/utils';
 import { CancelDeliveryForm } from '@/app/deliveries/cancel-delivery-form';
+import {
+  MarkLoadedDialog,
+  type MarkLoadedRouteTarget,
+} from '@/app/deliveries/mark-loaded-dialog';
+import {
+  PlanRouteDialog,
+  type PlanRouteTarget,
+} from '@/app/deliveries/plan-route-dialog';
 import {
   deliveryStatusClassName,
   formatCancellationReason,
@@ -61,11 +71,19 @@ export function DeliveryDetailContent({
   const router = useRouter();
   const embedded = onClose != null;
   const query = useDelivery(uid);
+  const { isTokenReady } = useTokenReady();
   const { backendUserData } = useSessionSync();
   const canDispatch = canDispatchDeliveries(backendUserData);
   const cancel = useCancelDeliveryMutation(uid);
   const pdf = useDeliveryPdfMutation(uid);
-  const markReady = useMarkRouteReadyMutation();
+  const [markLoadedTarget, setMarkLoadedTarget] = useState<MarkLoadedRouteTarget | null>(null);
+  const [planRouteTarget, setPlanRouteTarget] = useState<PlanRouteTarget | null>(null);
+
+  const delivery = query.data;
+  const dayList = useDeliveries(
+    delivery?.scheduledDate ? { date: delivery.scheduledDate } : {},
+    isTokenReady && Boolean(delivery?.scheduledDate) && markLoadedTarget != null,
+  );
 
   if (query.isLoading) {
     return (
@@ -75,7 +93,7 @@ export function DeliveryDetailContent({
     );
   }
 
-  if (query.isError || !query.data) {
+  if (query.isError || !delivery) {
     return (
       <p className={embedded ? 'text-destructive text-sm' : 'text-destructive p-6 text-sm'}>
         {getQueryErrorMessage(query.error)}
@@ -83,7 +101,6 @@ export function DeliveryDetailContent({
     );
   }
 
-  const delivery = query.data;
   const showCancel = canDispatch && canCancelDelivery(delivery.status);
   const showReady =
     canDispatch &&
@@ -91,7 +108,11 @@ export function DeliveryDetailContent({
     delivery.routeCode.trim().length > 0 &&
     delivery.driverUid > 0 &&
     delivery.scheduledDate.trim().length > 0;
+  const showPlanRoute = showReady;
   const pdfUrl = delivery.pdfUrl ?? pdf.data?.url ?? null;
+  const checklistDeliveries: DeliverySummary[] = dayList.data?.deliveries?.length
+    ? dayList.data.deliveries
+    : [delivery];
 
   async function onCancel(body: CancelDeliveryBody) {
     await cancel.mutateAsync(body);
@@ -104,6 +125,25 @@ export function DeliveryDetailContent({
 
   return (
     <div className={embedded ? 'flex flex-col gap-6' : 'flex flex-col gap-6 p-4 md:p-6'}>
+      {canDispatch ? (
+        <MarkLoadedDialog
+          open={markLoadedTarget != null}
+          onOpenChange={(open) => {
+            if (!open) setMarkLoadedTarget(null);
+          }}
+          target={markLoadedTarget}
+          deliveries={checklistDeliveries}
+        />
+      ) : null}
+      {canDispatch ? (
+        <PlanRouteDialog
+          open={planRouteTarget != null}
+          onOpenChange={(open) => {
+            if (!open) setPlanRouteTarget(null);
+          }}
+          target={planRouteTarget}
+        />
+      ) : null}
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">{delivery.deliveryNumber}</h1>
@@ -134,11 +174,10 @@ export function DeliveryDetailContent({
               type="button"
               variant="outline"
               className={cn(markLoadedButtonClassName)}
-              disabled={markReady.isPending}
               aria-label="Mark loaded — warehouse load acknowledgment"
-              title="Marks the warehouse load as loaded and ready, then texts the customer and driver"
+              title="Opens the invoice load checklist, then texts the customer and driver"
               onClick={() =>
-                void markReady.mutate({
+                setMarkLoadedTarget({
                   driverUid: delivery.driverUid,
                   routeCode: delivery.routeCode,
                   scheduledDate: delivery.scheduledDate,
@@ -147,6 +186,24 @@ export function DeliveryDetailContent({
             >
               <PackageCheck className="size-4 shrink-0" aria-hidden />
               Mark loaded
+            </Button>
+          ) : null}
+          {showPlanRoute ? (
+            <Button
+              type="button"
+              variant="outline"
+              aria-label="Plan route — Google-optimized stop order"
+              title="Opens a proposed stop order from Google Directions"
+              onClick={() =>
+                setPlanRouteTarget({
+                  driverUid: delivery.driverUid,
+                  routeCode: delivery.routeCode,
+                  scheduledDate: delivery.scheduledDate,
+                })
+              }
+            >
+              <Route className="size-4 shrink-0" aria-hidden />
+              Plan route
             </Button>
           ) : null}
           {onClose ? (
@@ -172,6 +229,45 @@ export function DeliveryDetailContent({
             <DetailRow label="Phone" value={delivery.contactPhone || '—'} />
             <DetailRow label="Invoice No." value={delivery.invoiceNumber || '—'} />
             <DetailRow label="Order" value={delivery.orderNumber || (delivery.orderUid != null ? `#${delivery.orderUid}` : '—')} />
+            <DetailRow
+              label="Truck"
+              value={
+                delivery.truckRegistration?.trim() ||
+                (delivery.vehicleAssetUid != null ? `Asset #${delivery.vehicleAssetUid}` : '—')
+              }
+            />
+            <DetailRow
+              label="Fuel when left"
+              value={
+                delivery.departureFuelLitres != null
+                  ? `${delivery.departureFuelLitres} L`
+                  : '—'
+              }
+            />
+            <DetailRow label="Driver" value={delivery.driverName?.trim() || '—'} />
+            <DetailRow
+              label="Delivery kind"
+              value={
+                delivery.deliveryKind === 'ibt'
+                  ? 'IBT'
+                  : delivery.deliveryKind === 'bit'
+                    ? 'BIT'
+                    : 'Standard'
+              }
+            />
+            <DetailRow label="GL code" value={delivery.glCode?.trim() || '—'} />
+            {delivery.deliveryKind === 'bit' ? (
+              <>
+                <DetailRow
+                  label="BIT disclaimer"
+                  value={delivery.bitDisclaimerAccepted ? 'Accepted' : 'Not accepted'}
+                />
+                <DetailRow
+                  label="Customs to BIT"
+                  value={delivery.customsToBit ? 'Yes' : 'No'}
+                />
+              </>
+            ) : null}
             <DetailRow label="Client location" value={formatCoordinates(delivery.latitude, delivery.longitude)} />
           </CardContent>
         </Card>
@@ -184,6 +280,14 @@ export function DeliveryDetailContent({
             <DetailRow
               label="Loaded"
               value={delivery.routeReady ? 'Loaded (dispatch ready)' : 'Not loaded'}
+            />
+            <DetailRow
+              label="Credit note passed"
+              value={delivery.creditNotePassed ? 'Yes' : 'No'}
+            />
+            <DetailRow
+              label="GRV done"
+              value={delivery.grvDone ? 'Yes' : 'No'}
             />
             <DetailRow
               label="Driver pickup"
@@ -320,7 +424,6 @@ export function DeliveryDetailContent({
 
       {showCancel ? <CancelDeliveryForm isPending={cancel.isPending} onCancel={onCancel} /> : null}
 
-      {markReady.isError ? <p className="text-destructive text-sm">{getQueryErrorMessage(markReady.error)}</p> : null}
       {cancel.isError ? <p className="text-destructive text-sm">{getQueryErrorMessage(cancel.error)}</p> : null}
     </div>
   );

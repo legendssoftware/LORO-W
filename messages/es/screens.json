@@ -992,11 +992,11 @@
     "leave": {
       "header": {
         "title": "Ausencias",
-        "description": "Solicita tiempo libre, filtra la bandeja y aprueba, rechaza o cancela una solicitud."
+        "description": "Solicita tiempo libre, filtra la bandeja y luego aprueba, rechaza o cancela una solicitud."
       },
       "actions": {
         "title": "Solicitar ausencia",
-        "description": "Haz clic en Solicitar ausencia. Elige el tipo, las fechas y envíala para decisión."
+        "description": "Haz clic en Solicitar ausencia. Elige el tipo y las fechas, luego envíala para decisión."
       },
       "filters": {
         "title": "Filtrar la bandeja",
@@ -1200,15 +1200,15 @@
     "approvals": {
       "header": {
         "title": "Aprobaciones",
-        "description": "Revisa solicitudes pendientes, inspecciona formularios de incorporación y aprueba o rechaza desde la web."
+        "description": "Filtra por estado o tipo, presenta una solicitud general con Nueva solicitud y abre una tarjeta para aprobar o rechazar. Los formularios de incorporación se abren desde la misma tarjeta; al aprobar se disparan webhooks salientes."
       },
       "toolbar": {
-        "title": "Filtrar y presentar una solicitud",
-        "description": "Busca por título o referencia y filtra por estado o tipo. Nueva solicitud presenta una solicitud general. Mis solicitudes carga las que enviaste."
+        "title": "Filtrar y Nueva solicitud",
+        "description": "Filtra por estado o tipo. Nueva solicitud presenta una aprobación general. Mis solicitudes muestra las que enviaste."
       },
       "list": {
-        "title": "Abrir una solicitud",
-        "description": "Haz clic en una tarjeta para aprobarla o rechazarla. Los formularios de incorporación se abren desde la misma tarjeta."
+        "title": "Abrir una tarjeta",
+        "description": "Abre una tarjeta para aprobar o rechazar. Los formularios de incorporación se abren desde la misma tarjeta. Al aprobar, se disparan webhooks salientes."
       }
     },
     "payslips": {
@@ -1264,7 +1264,7 @@
     "deliveries": {
       "header": {
         "title": "Entregas",
-        "description": "Asigna un pedido de venta ERP abierto a un conductor. La prueba de entrega firmada aparece aquí cuando el conductor registra la parada."
+        "description": "Asigna un pedido de venta ERP abierto a un conductor, filtra la lista y abre una fila para la ruta y la prueba de entrega."
       },
       "toolbar": {
         "title": "Filtrar entregas",
@@ -1272,11 +1272,11 @@
       },
       "assign": {
         "title": "Asignar entrega",
-        "description": "Haz clic en Asignar entrega. Elige un pedido de venta abierto y el conductor que hará la parada."
+        "description": "Haz clic en Asignar entrega. Elige un pedido de venta ERP abierto y el conductor que hará la parada."
       },
       "list": {
         "title": "Abrir una entrega",
-        "description": "Haz clic en una fila para la ruta, la valoración y la prueba de entrega firmada."
+        "description": "Haz clic en una fila para la ruta y la prueba de entrega firmada (POD)."
       }
     },
     "store-operations": {
