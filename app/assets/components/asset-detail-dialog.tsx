@@ -106,6 +106,41 @@ export function AssetDetailDialog({
             {asset.registrationPlate ? (
               <ModalRow label="Registration" value={asset.registrationPlate} />
             ) : null}
+            {asset.category === 'VEHICLE' ? (
+              <>
+                {asset.vehicleSizeClass ? (
+                  <ModalRow label="Size" value={asset.vehicleSizeClass} />
+                ) : null}
+                {asset.vehicleDesignation ? (
+                  <ModalRow
+                    label="Designation"
+                    value={asset.vehicleDesignation.replace(/_/g, ' ')}
+                  />
+                ) : null}
+                {asset.tonnageKg != null ? (
+                  <ModalRow label="Tonnage / payload" value={`${asset.tonnageKg} kg`} />
+                ) : null}
+                {asset.tareWeightKg != null ? (
+                  <ModalRow label="Tare weight" value={`${asset.tareWeightKg} kg`} />
+                ) : null}
+                {asset.grossVehicleMassKg != null ? (
+                  <ModalRow label="GVM" value={`${asset.grossVehicleMassKg} kg`} />
+                ) : null}
+                {asset.cargoVolumeM3 != null ? (
+                  <ModalRow label="Cargo volume" value={`${asset.cargoVolumeM3} m³`} />
+                ) : null}
+                {asset.maxPalletCapacity != null ? (
+                  <ModalRow label="Max pallets" value={String(asset.maxPalletCapacity)} />
+                ) : null}
+                {asset.axleCount != null ? (
+                  <ModalRow label="Axles" value={String(asset.axleCount)} />
+                ) : null}
+                {asset.tankCapacityLitres != null ? (
+                  <ModalRow label="Tank" value={`${asset.tankCapacityLitres} L`} />
+                ) : null}
+                {asset.fuelType ? <ModalRow label="Fuel" value={asset.fuelType} /> : null}
+              </>
+            ) : null}
             <Separator />
             <ModalRow label="Purchased" value={formatDate(asset.purchaseDate)} />
             <ModalRow

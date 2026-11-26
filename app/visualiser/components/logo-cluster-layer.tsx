@@ -13,7 +13,6 @@ import {
 import type { VisualiserMapPoint } from '@/lib/utils/visualiser-map-points';
 import { LAYER_META } from '@/lib/utils/visualiser-map-points';
 
-const CLIENT_HANDSHAKE_IMAGE_ID = 'client-handshake-icon';
 const HQ_BORDERED_IMAGE_ID = 'comp-logo-bitdrywall-hq';
 const HQ_BORDER_COLOR = '#22c55e';
 
@@ -23,7 +22,7 @@ const PIN_TEXTURE_SIZE = 256;
 const PIN_DISPLAY_SIZE = 72;
 /** MapLibre icon-size = display / texture (pixelRatio on addImage is handled separately). */
 const PIN_ICON_SIZE = PIN_DISPLAY_SIZE / PIN_TEXTURE_SIZE;
-/** Slightly smaller pins for client handshake + rep avatars (preserves prior relative sizing). */
+/** Slightly smaller pins for rep avatars (preserves prior relative sizing). */
 const PIN_ICON_SIZE_COMPACT = PIN_ICON_SIZE * (0.95 / 1.1);
 
 function getPinPixelRatio(): number {
@@ -35,9 +34,9 @@ type LogoClusterLayerProps = {
   points: VisualiserMapPoint[];
   clusterColor: string;
   pointColor: string;
-  /** Prefer logo / avatar / handshake icons for unclustered points. */
+  /** Prefer logo / avatar icons for unclustered points. */
   useLogoIcons?: boolean;
-  /** Layer id — drives HQ green border + client handshake. */
+  /** Layer id — drives HQ green border and rep avatars. */
   layerId?: keyof typeof LAYER_META;
   /** When false each point renders as its own marker (used for sales reps). */
   enableClustering?: boolean;
@@ -200,9 +199,7 @@ async function loadPinBitmap(
 }
 
 function iconSizeForLayer(layerId?: keyof typeof LAYER_META): number {
-  return layerId === 'clients' || layerId === 'reps'
-    ? PIN_ICON_SIZE_COMPACT
-    : PIN_ICON_SIZE;
+  return layerId === 'reps' ? PIN_ICON_SIZE_COMPACT : PIN_ICON_SIZE;
 }
 
 /** Zoom-aware icon size — grows when zoomed in without upscaling the texture. */
@@ -220,33 +217,12 @@ function iconSizeExpression(baseSize: number): ExpressionSpecification {
   ];
 }
 
-/** Blue circle + white handshake (Lucide-style) for client pins. */
-async function loadHandshakeBitmap(
-  size = PIN_TEXTURE_SIZE,
-): Promise<PinBitmapResult | null> {
-  const svg = encodeURIComponent(
-    `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none">
-      <circle cx="12" cy="12" r="11" fill="#2563eb"/>
-      <path d="m11 17 2 2a1 1 0 1 0 3-3" stroke="#fff" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
-      <path d="m14 14 2.5 2.5a1 1 0 1 0 3-3l-3.74-3.74a2 2 0 0 0-2.82 0L9 13" stroke="#fff" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
-      <path d="m8 12 3.5-3.5a2 2 0 0 1 2.82 0L16 11" stroke="#fff" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
-      <path d="m2 15 6-6" stroke="#fff" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
-      <path d="m7 20 5-5" stroke="#fff" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round"/>
-    </svg>`,
-  );
-  return loadPinBitmap(`data:image/svg+xml,${svg}`, size);
-}
-
 function resolveIconMeta(
   point: VisualiserMapPoint,
   useLogoIcons: boolean,
   layerId?: keyof typeof LAYER_META,
 ): { iconId: string; hasIcon: number } {
   if (!useLogoIcons) return { iconId: '', hasIcon: 0 };
-
-  if (layerId === 'clients') {
-    return { iconId: CLIENT_HANDSHAKE_IMAGE_ID, hasIcon: 1 };
-  }
 
   if (layerId === 'hq') {
     const slug = slugFromPublicPath(point.logoUrl) ?? BRANCH_HQ_LOGO_SLUG;
@@ -275,8 +251,8 @@ function resolveIconMeta(
 }
 
 /**
- * Clustered GeoJSON layer with optional competitor/branch/HQ logos,
- * client handshake icons, and sales-rep avatars.
+ * Clustered GeoJSON layer with optional competitor/branch/HQ logos
+ * and sales-rep avatars.
  */
 export function LogoClusterLayer({
   points,
@@ -371,15 +347,6 @@ export function LogoClusterLayer({
 
       if (cancelled || !isMapStyleReady(map)) return;
 
-      if (layerId === 'clients' && !mapHasImage(map, CLIENT_HANDSHAKE_IMAGE_ID)) {
-        const loaded = await loadHandshakeBitmap();
-        if (!cancelled && loaded && isMapStyleReady(map)) {
-          mapAddImage(map, CLIENT_HANDSHAKE_IMAGE_ID, loaded.bitmap, loaded.pixelRatio);
-        }
-      }
-
-      if (cancelled || !isMapStyleReady(map)) return;
-
       if (layerId === 'reps') {
         await Promise.all(
           points.map(async (p) => {
@@ -430,8 +397,7 @@ export function LogoClusterLayer({
               80,
               64,
             ],
-            'circle-stroke-width': 1.5,
-            'circle-stroke-color': '#ffffff',
+            'circle-stroke-width': 0,
             'circle-opacity': 0.9,
           },
         });
@@ -443,6 +409,7 @@ export function LogoClusterLayer({
           filter: ['has', 'point_count'],
           layout: {
             'text-field': '{point_count_abbreviated}',
+            'text-font': ['Open Sans Bold'],
             'text-size': 14,
             'text-allow-overlap': true,
           },
@@ -690,7 +657,6 @@ export function LayeredLogoClusters({
           layer === 'competitors' ||
           layer === 'branches' ||
           layer === 'hq' ||
-          layer === 'clients' ||
           layer === 'reps';
         return (
           <LogoClusterLayer

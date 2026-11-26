@@ -56,15 +56,11 @@ function tourKey(tourId: string, slot: string, field: 'title' | 'description'): 
   return `tours.${tourId}.${slot}.${field}`;
 }
 
+/** Display copy lives in `tours.${tourId}.*` (screens.json). Options only toggle optional steps. */
 function featureTour(
   path: string,
   tourId: string,
-  copy: {
-    header: { title: string; description: string };
-    actions?: { title: string; description: string };
-    filters?: { title: string; description: string };
-    content: { title: string; description: string };
-  },
+  options?: { actions?: boolean; filters?: boolean },
 ): PageTourConfig {
   const steps: PageTourStep[] = [
     {
@@ -75,7 +71,7 @@ function featureTour(
       align: 'start',
     },
   ];
-  if (copy.actions) {
+  if (options?.actions) {
     steps.push({
       anchor: `${tourId}-actions`,
       titleKey: tourKey(tourId, 'actions', 'title'),
@@ -85,7 +81,7 @@ function featureTour(
       optional: true,
     });
   }
-  if (copy.filters) {
+  if (options?.filters) {
     steps.push({
       anchor: `${tourId}-filters`,
       titleKey: tourKey(tourId, 'filters', 'title'),
@@ -111,178 +107,18 @@ function featureTour(
 }
 
 const PAGE_TOURS: Record<string, PageTourConfig> = {
-  '/leave': featureTour('/leave', 'leave', {
-    header: {
-      title: 'Leave',
-      description:
-        'Request time off, filter the inbox, and approve, reject, or cancel a request.',
-    },
-    actions: {
-      title: 'Request leave',
-      description: 'Click Request leave. Choose the type, the dates, and send it for a decision.',
-    },
-    filters: {
-      title: 'Filter the inbox',
-      description: 'Narrow by status, person, and date range. Your own requests stay in view when you only see your leave.',
-    },
-    content: {
-      title: 'Open a request',
-      description:
-        'The chart counts requests by status. Click a row to approve, reject, or cancel it.',
-    },
-  }),
-  '/warnings': featureTour('/warnings', 'warnings', {
-    header: {
-      title: 'Warnings',
-      description: 'Organisation warnings. A warning created on a staff profile also appears here.',
-    },
-    actions: {
-      title: 'Issue warning',
-      description: 'Click Issue warning. Record the person, the reason, and the status.',
-    },
-    filters: {
-      title: 'Filter by status',
-      description: 'Show every warning, or only one status.',
-    },
-    content: {
-      title: 'Review a warning',
-      description: 'Click a row to read it or remove it.',
-    },
-  }),
-  '/documents': featureTour('/documents', 'documents', {
-    header: {
-      title: 'Documents',
-      description: 'List, download, and attach documents to a person.',
-    },
-    actions: {
-      title: 'Attach document',
-      description: 'Click Attach document. Upload the file and link it to a person.',
-    },
-    filters: {
-      title: 'Filter by title',
-      description: 'Type part of a title to shorten the list.',
-    },
-    content: {
-      title: 'Download a file',
-      description: 'Each row is a document. Download it from the row.',
-    },
-  }),
-  '/feedback': featureTour('/feedback', 'feedback', {
-    header: {
-      title: 'Feedback',
-      description: 'The inbox, counts by status, and status updates. Token expiry stays on Settings.',
-    },
-    filters: {
-      title: 'Filter by status',
-      description: 'Show all feedback, or only New, In review, Resolved, or Closed.',
-    },
-    content: {
-      title: 'Resolve feedback',
-      description: 'The chart counts each status. Click Resolve on a row to mark it resolved.',
-    },
-  }),
-  '/geofences': featureTour('/geofences', 'geofences', {
-    header: {
-      title: 'Geofences',
-      description: 'Create areas and review entry events. The same areas draw on Competitor Overview.',
-    },
-    actions: {
-      title: 'New area',
-      description: 'Click New area. Set the name, latitude, longitude, and radius in metres.',
-    },
-    content: {
-      title: 'Open an area',
-      description: 'Click a row to edit the area or see how many entry events it recorded.',
-    },
-  }),
-  '/usage': featureTour('/usage', 'usage', {
-    header: {
-      title: 'Usage',
-      description: 'Analytics, summaries, and license usage. The server records the events itself.',
-    },
-    content: {
-      title: 'Read the last 30 days',
-      description:
-        'The chart is request volume. Under it, the license line shows errors and quota, and the list is requests by endpoint.',
-    },
-  }),
-  '/products': featureTour('/products', 'products', {
-    header: {
-      title: 'Products',
-      description: 'Create, edit, archive, restore, and review catalogue prices.',
-    },
-    actions: {
-      title: 'New product',
-      description: 'Click New product. Enter the name and price, then save it to the catalogue.',
-    },
-    content: {
-      title: 'Edit a product',
-      description: 'Click a row to change the name or price. Save current prices writes the prices on screen.',
-    },
-  }),
-  '/news': featureTour('/news', 'news', {
-    header: {
-      title: 'News',
-      description: 'Organisation announcements.',
-    },
-    actions: {
-      title: 'New post',
-      description: 'Click New post. Write the title and the announcement, then save it.',
-    },
-    content: {
-      title: 'Edit a post',
-      description: 'Click a row to change that announcement.',
-    },
-  }),
-  '/sales-tips': featureTour('/sales-tips', 'sales-tips', {
-    header: {
-      title: 'Sales tips',
-      description: 'Edit the catalogue. Home still shows the tip of the day.',
-    },
-    actions: {
-      title: 'New tip',
-      description: 'Click New tip. Add a title and the tip text.',
-    },
-    content: {
-      title: 'Edit a tip',
-      description: 'Click a row to update that tip.',
-    },
-  }),
-  '/resellers': featureTour('/resellers', 'resellers', {
-    header: {
-      title: 'Resellers',
-      description: 'Add, edit, archive, and restore reseller records.',
-    },
-    actions: {
-      title: 'New reseller',
-      description: 'Click New reseller. Start the record with a name, then save the details.',
-    },
-    content: {
-      title: 'Open a reseller',
-      description: 'Click a row to edit, archive, or restore that reseller.',
-    },
-  }),
-  '/rewards': featureTour('/rewards', 'rewards', {
-    header: {
-      title: 'Rewards',
-      description: 'The XP leaderboard and a person’s standing.',
-    },
-    content: {
-      title: 'Read the board',
-      description: 'The chart is the top of the board. The list under it is each person’s XP.',
-    },
-  }),
-  '/loyalty': featureTour('/loyalty', 'loyalty', {
-    header: {
-      title: 'Loyalty',
-      description: 'Profiles, the reward catalogue, and claim history.',
-    },
-    content: {
-      title: 'Add and claim rewards',
-      description:
-        'Type a reward name and click Add reward. Claim uses a catalogue reward. The line under the list is transaction and broadcast history.',
-    },
-  }),
+  '/leave': featureTour('/leave', 'leave', { actions: true, filters: true }),
+  '/warnings': featureTour('/warnings', 'warnings', { actions: true, filters: true }),
+  '/documents': featureTour('/documents', 'documents', { actions: true, filters: true }),
+  '/feedback': featureTour('/feedback', 'feedback', { filters: true }),
+  '/geofences': featureTour('/geofences', 'geofences', { actions: true }),
+  '/usage': featureTour('/usage', 'usage'),
+  '/products': featureTour('/products', 'products', { actions: true }),
+  '/news': featureTour('/news', 'news', { actions: true }),
+  '/sales-tips': featureTour('/sales-tips', 'sales-tips', { actions: true }),
+  '/resellers': featureTour('/resellers', 'resellers', { actions: true }),
+  '/rewards': featureTour('/rewards', 'rewards'),
+  '/loyalty': featureTour('/loyalty', 'loyalty'),
   '/claims': defineTour(
     '/claims',
     'loro-page-tour-claims-v1',

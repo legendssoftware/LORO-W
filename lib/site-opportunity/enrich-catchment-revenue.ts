@@ -4,12 +4,12 @@ import { useMemo } from 'react';
 import type { BranchListItem } from '@/api/types/branch';
 import type { BranchCatchmentOpportunity } from '@/api/types/site-opportunity';
 import type { PerformanceDashboardResponse } from '@/lib/types/erp-performance';
-import { normalizeStoreCode } from '@/lib/utils/branch-store-code';
 import {
   findBranchListItem,
   findSalesPerStoreForBranch,
   monthlyDateRange,
   revenueToMonthlyAverage,
+  salesPerStoreKey,
 } from '@/lib/utils/sales-per-store-match';
 
 export type EnrichCatchmentRevenueOptions = {
@@ -18,7 +18,7 @@ export type EnrichCatchmentRevenueOptions = {
   endDate?: string;
 };
 
-/** Fill missing actualRevenueZAR from performance / ERP salesPerStore (APK-style matching). */
+/** Fill/align actualRevenueZAR from performance / ERP salesPerStore (country-scoped, ZAR). */
 export function enrichCatchmentsWithDashboardRevenue(
   catchments: BranchCatchmentOpportunity[],
   branches: BranchListItem[],
@@ -32,17 +32,9 @@ export function enrichCatchmentsWithDashboardRevenue(
   const month = monthlyDateRange();
   const startDate = options?.startDate ?? month.startDate;
   const endDate = options?.endDate ?? month.endDate;
-  const usedStoreIds = new Set<string>();
+  const usedStoreKeys = new Set<string>();
 
   return catchments.map((catchment) => {
-    if (
-      catchment.actualRevenueZAR != null &&
-      Number.isFinite(catchment.actualRevenueZAR) &&
-      catchment.actualRevenueZAR > 0
-    ) {
-      return catchment;
-    }
-
     const branch = findBranchListItem(catchment.branchId, branches);
     if (!branch) return catchment;
 
@@ -50,11 +42,13 @@ export function enrichCatchmentsWithDashboardRevenue(
       branch,
       salesPerStore,
       masterBranches,
-      usedStoreIds,
+      usedStoreKeys,
     );
-    if (!store?.totalRevenue) return catchment;
+    if (store?.totalRevenue == null || !Number.isFinite(store.totalRevenue)) {
+      return catchment;
+    }
 
-    usedStoreIds.add(normalizeStoreCode(store.storeId));
+    usedStoreKeys.add(salesPerStoreKey(store));
     // Period is typically one calendar month; still normalize to monthly avg if range spans months.
     const actualRevenueZAR = revenueToMonthlyAverage(
       store.totalRevenue,

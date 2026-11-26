@@ -523,6 +523,14 @@ export interface SearchableOptionRow {
   icon?: React.ReactNode;
   /** Extra tokens for fuzzy search */
   searchExtra?: string;
+  /** Prevents selecting this row while keeping it visible for status context. */
+  disabled?: boolean;
+  /** Optional right-aligned status pill text (e.g. remaining capacity or Full). */
+  badge?: string;
+  /** Optional class override for the right-aligned badge. */
+  badgeClassName?: string;
+  /** Optional class override for the CommandItem row (e.g. green tint for active truck). */
+  itemClassName?: string;
 }
 
 export interface SearchableOptionListPickerProps {
@@ -599,7 +607,7 @@ export function SearchableOptionListPicker({
           disabled={disabled}
           className={cn(
             reportsFilterSelectTriggerClass,
-            'justify-between font-normal gap-2',
+            'min-w-0 max-w-full overflow-hidden justify-between font-normal gap-2',
             compactTriggerOnMobile &&
               'h-9 w-9 shrink-0 justify-center px-0 sm:w-9 md:h-9 md:justify-between md:px-3',
             compactTriggerOnMobile &&
@@ -681,7 +689,13 @@ export function SearchableOptionListPicker({
                   <CommandItem
                     key={row.value}
                     value={cmdValue}
+                    disabled={row.disabled}
+                    className={cn(
+                      row.itemClassName,
+                      row.disabled && 'cursor-not-allowed opacity-70',
+                    )}
                     onSelect={() => {
+                      if (row.disabled) return;
                       onValueChange(row.value);
                       setOpen(false);
                     }}
@@ -698,8 +712,18 @@ export function SearchableOptionListPicker({
                           {row.icon}
                         </span>
                       ) : null}
-                      {row.label}
+                      <span className="truncate">{row.label}</span>
                     </span>
+                    {row.badge ? (
+                      <span
+                        className={cn(
+                          'ml-2 shrink-0 rounded px-1.5 py-0.5 text-[11px] font-medium',
+                          row.badgeClassName ?? 'bg-muted text-muted-foreground',
+                        )}
+                      >
+                        {row.badge}
+                      </span>
+                    ) : null}
                   </CommandItem>
                 );
               })}

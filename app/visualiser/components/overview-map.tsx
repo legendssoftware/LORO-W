@@ -38,7 +38,10 @@ import {
   RepTrackerControl,
   type LastKnownLocationSummary,
 } from '@/app/visualiser/components/rep-tracker-control';
-import { useVisualiserSimulation } from '@/app/visualiser/simulation-context';
+import {
+  useVisualiserSimulation,
+  type SimulationRegionFocus,
+} from '@/app/visualiser/simulation-context';
 import {
   DEFAULT_LAYER_VISIBILITY,
   useVisualiserMapLayers,
@@ -266,47 +269,83 @@ function FlyToSimulationZone({
   lng,
   zoneId,
   ranAt,
+  hasRegionFocus,
 }: {
   lat: number;
   lng: number;
   zoneId: string | null;
   ranAt: string | null;
+  hasRegionFocus?: boolean;
 }) {
   const { map, isLoaded } = useMap();
   const lastRanAtRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (!map || !isLoaded || !zoneId) return;
-    // After a fresh run, FitSimulationBounds frames all zones — skip fly.
-    if (ranAt && ranAt !== lastRanAtRef.current) {
-      lastRanAtRef.current = ranAt;
-      return;
-    }
+    const isInitialForRun = ranAt != null && lastRanAtRef.current !== ranAt;
+    lastRanAtRef.current = ranAt;
+    if (isInitialForRun && hasRegionFocus) return;
     map.flyTo({
       center: [lng, lat],
       zoom: Math.max(map.getZoom(), 12),
-      duration: 700,
+      duration: 800,
       essential: true,
     });
-  }, [map, isLoaded, zoneId, lat, lng, ranAt]);
+  }, [map, isLoaded, zoneId, lat, lng, ranAt, hasRegionFocus]);
 
   return null;
 }
 
-/** Fit map to all simulation zones after a run (keyed by ranAt). */
+/** Pan/zoom the map into a typed simulation region (bounds or geocoded center). */
+function FocusSimulationRegion({
+  target,
+  hasResultsDrawer,
+}: {
+  target: SimulationRegionFocus | null;
+  hasResultsDrawer?: boolean;
+}) {
+  const { map, isLoaded } = useMap();
+
+  useEffect(() => {
+    if (!map || !isLoaded || !target) return;
+    const rightPadding = hasResultsDrawer ? 380 : 64;
+    if (target.bounds) {
+      map.fitBounds(target.bounds, {
+        padding: { top: 64, bottom: 64, left: 64, right: rightPadding },
+        maxZoom: 13,
+        duration: 900,
+      });
+      return;
+    }
+    if (target.center) {
+      map.flyTo({
+        center: target.center,
+        zoom: target.zoom ?? 12,
+        duration: 900,
+        essential: true,
+      });
+    }
+  }, [map, isLoaded, target, hasResultsDrawer]);
+
+  return null;
+}
+
+/** Fit map to all simulation zones when no specific zone is selected. */
 function FitSimulationBounds({
   zones,
   ranAt,
+  disabled,
 }: {
   zones: Array<{ lat: number; lng: number; radiusMeters: number }>;
   ranAt: string | null;
+  disabled?: boolean;
 }) {
   const { map, isLoaded } = useMap();
   const zonesRef = useRef(zones);
   zonesRef.current = zones;
 
   useEffect(() => {
-    if (!map || !isLoaded || !ranAt) return;
+    if (!map || !isLoaded || !ranAt || disabled) return;
     const current = zonesRef.current;
     if (current.length === 0) return;
 
@@ -342,7 +381,7 @@ function FitSimulationBounds({
       ],
       { padding: 72, maxZoom: 12, duration: 900 },
     );
-  }, [map, isLoaded, ranAt]);
+  }, [map, isLoaded, ranAt, disabled]);
 
   return null;
 }
@@ -574,7 +613,8 @@ export function OverviewMap({
     clearSelection: clearRepSelection,
   } = useSearchableUsersList({ enabled, limit: 100 });
 
-  const { isActive, selectedZone, allZones, ranAt } = useVisualiserSimulation();
+  const { isActive, selectedZone, allZones, ranAt, regionFocus } =
+    useVisualiserSimulation();
 
   const { data: branches = [] } = useBranches({ enabled });
 
@@ -1403,8 +1443,13 @@ export function OverviewMap({
           coordinates={plannedRouteFitLine}
           routeKey={plannedRouteKey}
         />
+        <FocusSimulationRegion
+          target={regionFocus}
+          hasResultsDrawer={isActive}
+        />
         <FitSimulationBounds
           ranAt={ranAt}
+          disabled={Boolean(selectedZone) || Boolean(regionFocus)}
           zones={allZones.map((z) => ({
             lat: z.lat,
             lng: z.lng,
@@ -1417,6 +1462,7 @@ export function OverviewMap({
             lng={selectedZone.lng}
             zoneId={selectedZone.id}
             ranAt={ranAt}
+            hasRegionFocus={Boolean(regionFocus)}
           />
         ) : null}
         <FlyToVisitAction

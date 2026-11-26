@@ -12,15 +12,22 @@ import {
   LEAD_DETAIL_DIALOG_CONTENT_CLASS,
 } from '@/components/detail-dialog/detail-dialog-primitives';
 import { DeliveryDetailContent } from '@/app/deliveries/delivery-detail-content';
+import type { CancelDeliveryTarget } from '@/app/deliveries/cancel-delivery-form';
 
 export interface DeliveryDetailDialogProps {
   uid: number | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onRequestCancel?: (target: CancelDeliveryTarget) => void;
 }
 
 /** Full delivery record, opened from a list row without leaving the page. */
-export function DeliveryDetailDialog({ uid, open, onOpenChange }: DeliveryDetailDialogProps) {
+export function DeliveryDetailDialog({
+  uid,
+  open,
+  onOpenChange,
+  onRequestCancel,
+}: DeliveryDetailDialogProps) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent showCloseButton={false} className={LEAD_DETAIL_DIALOG_CONTENT_CLASS}>
@@ -29,7 +36,13 @@ export function DeliveryDetailDialog({ uid, open, onOpenChange }: DeliveryDetail
           <DialogTitle>Delivery</DialogTitle>
           <DialogDescription className="sr-only">Delivery details</DialogDescription>
         </DialogHeader>
-        {uid != null ? <DeliveryDetailContent uid={uid} onClose={() => onOpenChange(false)} /> : null}
+        {uid != null ? (
+          <DeliveryDetailContent
+            uid={uid}
+            onClose={() => onOpenChange(false)}
+            onRequestCancel={onRequestCancel}
+          />
+        ) : null}
       </DialogContent>
     </Dialog>
   );

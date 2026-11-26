@@ -55,15 +55,67 @@ export function applyTurnoverOverridesToZone<T extends SiteOpportunityZone>(
   captureLowPct: number,
   captureHighPct: number,
   overrides?: TurnoverOverrideSettings,
+  options?: { revenuePerSqmMonthlyZAR?: number },
 ): T {
   if (!hasOverrides(overrides)) return zone;
 
   const byBrand = rebuildByBrand(zone.byBrand, overrides ?? {});
   const addressablePoolZAR = byBrand.reduce((sum, row) => sum + row.turnoverZAR, 0);
-  const potentialLowZAR = addressablePoolZAR * captureLowPct;
-  const potentialHighZAR = addressablePoolZAR * captureHighPct;
+  const marketPotentialLowZAR = addressablePoolZAR * captureLowPct;
+  const marketPotentialHighZAR = addressablePoolZAR * captureHighPct;
+
+  let potentialLowZAR = marketPotentialLowZAR;
+  let potentialHighZAR = marketPotentialHighZAR;
+  let capacityCeilingZAR: number | null | undefined;
+
+  if (zone.kind === 'catchment') {
+    const floorSizeSqm = zone.floorSizeSqm ?? null;
+    const rate = options?.revenuePerSqmMonthlyZAR;
+    if (
+      floorSizeSqm != null &&
+      Number.isFinite(floorSizeSqm) &&
+      floorSizeSqm > 0 &&
+      rate != null &&
+      Number.isFinite(rate) &&
+      rate > 0
+    ) {
+      capacityCeilingZAR = floorSizeSqm * rate;
+      potentialLowZAR = Math.min(marketPotentialLowZAR, capacityCeilingZAR);
+      potentialHighZAR = Math.min(marketPotentialHighZAR, capacityCeilingZAR);
+    } else if (
+      zone.capacityCeilingZAR != null &&
+      Number.isFinite(zone.capacityCeilingZAR) &&
+      zone.capacityCeilingZAR > 0
+    ) {
+      capacityCeilingZAR = zone.capacityCeilingZAR;
+      potentialLowZAR = Math.min(marketPotentialLowZAR, capacityCeilingZAR);
+      potentialHighZAR = Math.min(marketPotentialHighZAR, capacityCeilingZAR);
+    }
+  }
+
   const byCategory = countByCategoryFromBrandCounts(byBrand);
   const captureTimeline = buildCaptureTimeline(potentialLowZAR, potentialHighZAR);
+
+  if (zone.kind === 'catchment') {
+    const revenueGapZAR =
+      zone.actualRevenueZAR != null ? potentialHighZAR - zone.actualRevenueZAR : null;
+    return {
+      ...zone,
+      byBrand,
+      byCategory,
+      addressablePoolZAR,
+      potentialLowZAR,
+      potentialHighZAR,
+      ...(capacityCeilingZAR !== undefined ? { capacityCeilingZAR } : {}),
+      revenueGapZAR,
+      opportunityScore: revenueGapZAR ?? addressablePoolZAR,
+      captureTimeline,
+      monthsToTargetMid: monthsToTargetMid(potentialLowZAR, potentialHighZAR),
+    };
+  }
+
+  const scoreRatio =
+    zone.addressablePoolZAR > 0 ? addressablePoolZAR / zone.addressablePoolZAR : 1;
 
   return {
     ...zone,
@@ -72,6 +124,10 @@ export function applyTurnoverOverridesToZone<T extends SiteOpportunityZone>(
     addressablePoolZAR,
     potentialLowZAR,
     potentialHighZAR,
+    opportunityScore:
+      zone.addressablePoolZAR > 0
+        ? zone.opportunityScore * scoreRatio
+        : addressablePoolZAR,
     captureTimeline,
     monthsToTargetMid: monthsToTargetMid(potentialLowZAR, potentialHighZAR),
   };

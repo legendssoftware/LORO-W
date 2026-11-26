@@ -8,6 +8,8 @@ export interface SiteOpportunityQuery {
   minBranchSeparationKm?: number;
   captureLowPct?: number;
   captureHighPct?: number;
+  startDate?: string;
+  endDate?: string;
 }
 
 /** GET /reports/site-opportunities — one engine for the map and the server. */
@@ -23,6 +25,8 @@ export async function getSiteOpportunities(
       minBranchSeparationKm: params.minBranchSeparationKm,
       captureLowPct: params.captureLowPct,
       captureHighPct: params.captureHighPct,
+      startDate: params.startDate,
+      endDate: params.endDate,
     },
     timeout: 60_000,
   });
