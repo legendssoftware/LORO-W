@@ -344,6 +344,7 @@ export {
   useAssignDeliveryMutation,
   useAssignableOrders,
   useCancelDeliveryMutation,
+  useReassignDeliveryMutation,
   useDeliveries,
   useDelivery,
   useDeliveryDrivers,

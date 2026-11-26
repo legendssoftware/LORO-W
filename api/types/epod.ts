@@ -214,6 +214,16 @@ export interface CancelDeliveryBody {
   note?: string;
 }
 
+/** PATCH /epod/deliveries/:uid/reassign — moves one open invoice to another truck/driver/route. */
+export interface ReassignDeliveryBody {
+  vehicleAssetUid: number;
+  driverUid: number;
+  routeCode: string;
+  scheduledDate: string;
+  departureFuelLitres?: number;
+  stopSequence?: number;
+}
+
 /** Anonymized pin on the public tracking map. No client name or address. */
 export interface PublicRouteStop {
   stopNumber: number;
@@ -279,6 +289,10 @@ export interface AssignableOrder {
   itemCount: number;
   weightKg?: number | null;
   glCode?: string | null;
+  assignedDeliveryUid?: number | null;
+  assignedDeliveryNumber?: string | null;
+  assignedTruckRegistration?: string | null;
+  assignedRouteCode?: string | null;
 }
 
 export interface CreateDeliveryBody {

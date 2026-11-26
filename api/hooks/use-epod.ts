@@ -14,6 +14,7 @@ import {
   listDrivers,
   markRouteReady,
   planRoute,
+  reassignDelivery,
 } from '@/api/endpoints/epod';
 import type {
   AcceptRoutePlanBody,
@@ -26,6 +27,7 @@ import type {
   DeliverySummary,
   PlanRouteBody,
   ReadyRouteBody,
+  ReassignDeliveryBody,
 } from '@/api/types/epod';
 
 export const EPOD_QUERY_KEY = ['epod'] as const;
@@ -189,7 +191,23 @@ export function useCancelDeliveryMutation(uid: number) {
     mutationFn: (body: CancelDeliveryBody) => cancelDelivery(client, uid, body),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: [...EPOD_QUERY_KEY, 'list'] });
-      queryClient.invalidateQueries({ queryKey: [...EPOD_QUERY_KEY, 'detail', uid] });
+      queryClient.invalidateQueries({ queryKey: [...EPOD_QUERY_KEY, 'detail'] });
+      queryClient.invalidateQueries({ queryKey: [...EPOD_QUERY_KEY, 'assignable-orders'] });
+    },
+  });
+}
+
+/** Moves one open invoice/stop to another truck, driver, route, or scheduled day. */
+export function useReassignDeliveryMutation() {
+  const client = useApiClient();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ uid, body }: { uid: number; body: ReassignDeliveryBody }) =>
+      reassignDelivery(client, uid, body),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [...EPOD_QUERY_KEY, 'list'] });
+      queryClient.invalidateQueries({ queryKey: [...EPOD_QUERY_KEY, 'detail'] });
+      queryClient.invalidateQueries({ queryKey: [...EPOD_QUERY_KEY, 'assignable-orders'] });
     },
   });
 }

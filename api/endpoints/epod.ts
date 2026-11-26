@@ -16,6 +16,7 @@ import type {
   PublicDelivery,
   PublicRatingResponse,
   ReadyRouteBody,
+  ReassignDeliveryBody,
   SubmitDeliveryRatingBody,
 } from '@/api/types/epod';
 
@@ -96,6 +97,16 @@ export async function cancelDelivery(
   body: CancelDeliveryBody,
 ): Promise<DeliveryDetail> {
   const { data } = await client.post<DeliveryDetail>(`/epod/deliveries/${uid}/cancel`, body);
+  return data;
+}
+
+/** PATCH /epod/deliveries/:uid/reassign — moves one open invoice to another truck, driver, or route. */
+export async function reassignDelivery(
+  client: AxiosInstance,
+  uid: number,
+  body: ReassignDeliveryBody,
+): Promise<DeliveryDetail> {
+  const { data } = await client.patch<DeliveryDetail>(`/epod/deliveries/${uid}/reassign`, body);
   return data;
 }
 

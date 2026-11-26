@@ -21,6 +21,7 @@ import {
   useAssignDeliveriesBatchMutation,
   useAssignableOrders,
   useAssetsInfinite,
+  useDeliveries,
   useDeliveryDrivers,
   useTokenReady,
 } from '@/api/hooks';
@@ -30,7 +31,7 @@ import {
   type AssignableOrder,
   type DeliveryKind,
 } from '@/api/types/epod';
-import { VEHICLE_DESIGNATION_LABELS, type AssetRecord } from '@/api/types/asset';
+import { VEHICLE_DESIGNATION_LABELS } from '@/api/types/asset';
 import { Button } from '@/components/ui/button';
 import {
   Dialog,
@@ -67,94 +68,15 @@ import {
   todayDateString,
 } from '@/app/deliveries/format';
 import { assetTitle } from '@/app/assets/lib/asset-display';
+import {
+  findSuggestedTruck,
+  formatSuggestedTruckLabel,
+  remainingTruckCapacityKg,
+  summarizeTruckLoads,
+} from '@/app/deliveries/truck-capacity';
 
 const EMPTY_VALUE = '';
 const ORDER_SPLIT = '\u001f';
-const MIN_OPTIMAL_LOAD_RATIO = 0.6;
-const MAX_OPTIMAL_LOAD_RATIO = 0.8;
-const TARGET_OPTIMAL_LOAD_RATIO = 0.7;
-
-interface SmallerTruckSuggestion {
-  truck: AssetRecord;
-  capacityKg: number;
-  utilizationPct: number;
-}
-
-/** Distance from the ideal 60–80% load utilization band (0 when inside the band). */
-function distanceToOptimalBand(ratio: number): number {
-  if (ratio >= MIN_OPTIMAL_LOAD_RATIO && ratio <= MAX_OPTIMAL_LOAD_RATIO) return 0;
-  return Math.min(Math.abs(ratio - MIN_OPTIMAL_LOAD_RATIO), Math.abs(ratio - MAX_OPTIMAL_LOAD_RATIO));
-}
-
-/**
- * Suggests a smaller capable truck when the selected truck is under-utilized (< 60% capacity).
- * Prefers a truck whose load utilization sits inside 60–80% (closest to 70%), falling back to
- * the closest smaller fit that still improves utilization over the currently selected truck.
- */
-function findSuggestedSmallerTruck(
-  totalWeightKg: number,
-  selectedTruck: AssetRecord | null,
-  capableTrucks: readonly AssetRecord[],
-): SmallerTruckSuggestion | null {
-  if (totalWeightKg <= 0 || !selectedTruck) return null;
-  const selectedCapacityKg = selectedTruck.tonnageKg;
-  if (
-    selectedCapacityKg == null ||
-    !Number.isFinite(selectedCapacityKg) ||
-    selectedCapacityKg <= 0 ||
-    totalWeightKg > selectedCapacityKg
-  ) {
-    return null;
-  }
-
-  const currentRatio = totalWeightKg / selectedCapacityKg;
-  if (currentRatio >= MIN_OPTIMAL_LOAD_RATIO) return null;
-  const currentDistance = distanceToOptimalBand(currentRatio);
-
-  let best: {
-    truck: AssetRecord;
-    capacityKg: number;
-    ratio: number;
-    bandDistance: number;
-    targetDistance: number;
-  } | null = null;
-
-  for (const truck of capableTrucks) {
-    if (truck.uid === selectedTruck.uid) continue;
-    const capacityKg = truck.tonnageKg;
-    if (
-      capacityKg == null ||
-      !Number.isFinite(capacityKg) ||
-      capacityKg < totalWeightKg ||
-      capacityKg >= selectedCapacityKg
-    ) {
-      continue;
-    }
-
-    const ratio = totalWeightKg / capacityKg;
-    const bandDistance = distanceToOptimalBand(ratio);
-    if (bandDistance >= currentDistance) continue;
-
-    const targetDistance = Math.abs(ratio - TARGET_OPTIMAL_LOAD_RATIO);
-    if (
-      best == null ||
-      bandDistance < best.bandDistance ||
-      (bandDistance === best.bandDistance && targetDistance < best.targetDistance) ||
-      (bandDistance === best.bandDistance &&
-        targetDistance === best.targetDistance &&
-        capacityKg < best.capacityKg)
-    ) {
-      best = { truck, capacityKg, ratio, bandDistance, targetDistance };
-    }
-  }
-
-  if (!best) return null;
-  return {
-    truck: best.truck,
-    capacityKg: best.capacityKg,
-    utilizationPct: Math.round(best.ratio * 100),
-  };
-}
 
 /** Icon for each delivery type. Exhaustive so new types fail at compile time. */
 function deliveryTypeIcon(kind: DeliveryKind): ReactNode {
@@ -216,6 +138,7 @@ export function AssignDeliveryDialog({ open, onOpenChange }: AssignDeliveryDialo
   const [selectedOrderKeys, setSelectedOrderKeys] = useState<string[]>([]);
   const [orderSearch, setOrderSearch] = useState('');
   const [typedSalesOrder, setTypedSalesOrder] = useState('');
+  const [typedOrderError, setTypedOrderError] = useState<string | null>(null);
   const [vehicleAssetUid, setVehicleAssetUid] = useState(EMPTY_VALUE);
   const [departureFuelLitres, setDepartureFuelLitres] = useState('');
   const [driverUid, setDriverUid] = useState(EMPTY_VALUE);
@@ -225,8 +148,16 @@ export function AssignDeliveryDialog({ open, onOpenChange }: AssignDeliveryDialo
   const [glManuallyEdited, setGlManuallyEdited] = useState(false);
   const [deliveryKind, setDeliveryKind] = useState<DeliveryKind>('branch_to_customer');
 
+  const dayDeliveriesQuery = useDeliveries(
+    scheduledDate ? { date: scheduledDate } : {},
+    isTokenReady && open && Boolean(scheduledDate),
+  );
   const orders = ordersQuery.data ?? [];
   const trucks = trucksQuery.data ?? [];
+  const truckLoads = useMemo(
+    () => summarizeTruckLoads(dayDeliveriesQuery.data?.deliveries ?? []),
+    [dayDeliveriesQuery.data?.deliveries],
+  );
 
   const orderByKey = useMemo(() => {
     const map = new Map<string, AssignableOrder>();
@@ -277,38 +208,87 @@ export function AssignDeliveryDialog({ open, onOpenChange }: AssignDeliveryDialo
     });
   }, [orders, orderSearch]);
 
-  /** Only trucks with enough rated tonnage for the currently selected load remain selectable. */
+  /** Trucks that are not at full capacity and still have enough remaining payload for the selected load. */
   const capableTrucks = useMemo(() => {
-    if (selectedTotalWeightKg <= 0) return trucks;
-    return trucks.filter(
-      (truck) =>
-        truck.tonnageKg != null &&
-        Number.isFinite(truck.tonnageKg) &&
-        truck.tonnageKg >= selectedTotalWeightKg,
-    );
-  }, [trucks, selectedTotalWeightKg]);
+    return trucks.filter((truck) => {
+      const freeKg = remainingTruckCapacityKg(truck, truckLoads);
+      if (freeKg == null) return selectedTotalWeightKg <= 0;
+      if (freeKg <= 0) return false;
+      return selectedTotalWeightKg <= 0 || freeKg >= selectedTotalWeightKg;
+    });
+  }, [trucks, truckLoads, selectedTotalWeightKg]);
 
-  const truckOptions = useMemo<SearchableOptionRow[]>(
-    () =>
-      capableTrucks.map((truck) => {
-        const title = assetTitle(truck);
-        const plate = truck.registrationPlate?.trim() ?? '';
-        const tonnage =
-          truck.tonnageKg != null && Number.isFinite(truck.tonnageKg)
-            ? `${truck.tonnageKg.toLocaleString('en-ZA')} kg`
+  const truckOptions = useMemo<SearchableOptionRow[]>(() => {
+    const scored = trucks.map((truck) => {
+      const title = assetTitle(truck);
+      const plate = truck.registrationPlate?.trim() ?? '';
+      const capacityKg =
+        truck.tonnageKg != null && Number.isFinite(truck.tonnageKg) && truck.tonnageKg > 0
+          ? truck.tonnageKg
+          : null;
+      const tonnage = capacityKg != null ? `${capacityKg.toLocaleString('en-ZA')} kg` : 'No tonnage';
+      const designation = truck.vehicleDesignation
+        ? VEHICLE_DESIGNATION_LABELS[truck.vehicleDesignation]
+        : '';
+      const active = truckLoads.get(truck.uid);
+      const existingLoadKg = active?.loadKg ?? 0;
+      const existingStopCount = active?.stopCount ?? 0;
+      const freeKg = remainingTruckCapacityKg(truck, truckLoads);
+      const isFull = capacityKg != null && freeKg != null && freeKg <= 0;
+      const lacksSpace =
+        !isFull &&
+        selectedTotalWeightKg > 0 &&
+        (freeKg == null || freeKg < selectedTotalWeightKg);
+      const hasExistingLoad = existingStopCount > 0;
+      const disabled = isFull || lacksSpace;
+
+      let badge: string | undefined;
+      let badgeClassName: string | undefined;
+      let itemClassName: string | undefined;
+
+      if (isFull) {
+        badge = `Full · ${existingStopCount} ${existingStopCount === 1 ? 'order' : 'orders'}`;
+        badgeClassName =
+          'border border-red-500/40 bg-red-500/15 text-red-700 dark:text-red-300';
+        itemClassName = 'bg-emerald-500/10 text-emerald-950 dark:text-emerald-100';
+      } else if (hasExistingLoad && !lacksSpace && freeKg != null) {
+        badge = `${existingStopCount} assigned · ${freeKg.toLocaleString('en-ZA', { maximumFractionDigits: 0 })} kg free`;
+        badgeClassName =
+          'border border-emerald-500/40 bg-emerald-500/15 text-emerald-700 dark:text-emerald-300';
+        itemClassName = 'bg-emerald-500/10';
+      } else if (lacksSpace) {
+        badge =
+          freeKg != null
+            ? `Only ${freeKg.toLocaleString('en-ZA', { maximumFractionDigits: 0 })} kg free`
             : 'No tonnage';
-        const designation = truck.vehicleDesignation
-          ? VEHICLE_DESIGNATION_LABELS[truck.vehicleDesignation]
-          : '';
-        return {
+        badgeClassName = 'bg-muted text-muted-foreground';
+      }
+
+      const sortRank = isFull ? 2 : lacksSpace ? 1 : 0;
+      return {
+        sortRank,
+        row: {
           value: String(truck.uid),
           label: [title, plate, tonnage, designation].filter(Boolean).join(' · '),
-          icon: <Truck className="size-4 shrink-0" />,
+          icon: (
+            <Truck
+              className={cn(
+                'size-4 shrink-0',
+                hasExistingLoad && !isFull && 'text-emerald-600 dark:text-emerald-400',
+              )}
+            />
+          ),
           searchExtra: `${title} ${plate} ${tonnage} ${designation} ${truck.brand ?? ''} ${truck.modelNumber ?? ''} ${truck.fuelType ?? ''} ${truck.vehicleSizeClass ?? ''}`,
-        };
-      }),
-    [capableTrucks],
-  );
+          disabled,
+          badge,
+          badgeClassName,
+          itemClassName,
+        } satisfies SearchableOptionRow,
+      };
+    });
+    scored.sort((a, b) => a.sortRank - b.sortRank);
+    return scored.map((entry) => entry.row);
+  }, [trucks, truckLoads, selectedTotalWeightKg]);
 
   const selectedTruck = useMemo(
     () => trucks.find((truck) => String(truck.uid) === vehicleAssetUid) ?? null,
@@ -320,29 +300,34 @@ export function AssignDeliveryDialog({ open, onOpenChange }: AssignDeliveryDialo
       ? selectedTruck.tonnageKg
       : null;
 
+  const selectedTruckExistingLoad = selectedTruck ? truckLoads.get(selectedTruck.uid) : undefined;
+  const selectedTruckExistingKg = selectedTruckExistingLoad?.loadKg ?? 0;
+  const projectedTotalWeightKg =
+    Math.round((selectedTruckExistingKg + selectedTotalWeightKg) * 100) / 100;
+
   const isTruckOverloaded =
     selectedTruck != null &&
-    selectedTotalWeightKg > 0 &&
-    (selectedTruckCapacityKg == null || selectedTotalWeightKg > selectedTruckCapacityKg);
+    (selectedTotalWeightKg > 0 || selectedTruckExistingKg > 0) &&
+    (selectedTruckCapacityKg == null || projectedTotalWeightKg > selectedTruckCapacityKg);
 
   const overloadByKg =
-    selectedTruckCapacityKg != null && selectedTotalWeightKg > selectedTruckCapacityKg
-      ? Math.round((selectedTotalWeightKg - selectedTruckCapacityKg) * 100) / 100
+    selectedTruckCapacityKg != null && projectedTotalWeightKg > selectedTruckCapacityKg
+      ? Math.round((projectedTotalWeightKg - selectedTruckCapacityKg) * 100) / 100
       : null;
 
   const remainingCapacityKg =
-    selectedTruckCapacityKg != null && selectedTotalWeightKg <= selectedTruckCapacityKg
-      ? Math.round((selectedTruckCapacityKg - selectedTotalWeightKg) * 100) / 100
+    selectedTruckCapacityKg != null && projectedTotalWeightKg <= selectedTruckCapacityKg
+      ? Math.round((selectedTruckCapacityKg - projectedTotalWeightKg) * 100) / 100
       : null;
 
   const loadUtilizationPct =
     selectedTruckCapacityKg != null && selectedTruckCapacityKg > 0
-      ? Math.min(999, Math.round((selectedTotalWeightKg / selectedTruckCapacityKg) * 100))
+      ? Math.min(999, Math.round((projectedTotalWeightKg / selectedTruckCapacityKg) * 100))
       : null;
 
-  const suggestedSmallerTruck = useMemo(
-    () => findSuggestedSmallerTruck(selectedTotalWeightKg, selectedTruck, capableTrucks),
-    [selectedTotalWeightKg, selectedTruck, capableTrucks],
+  const suggestedTruck = useMemo(
+    () => findSuggestedTruck(selectedTotalWeightKg, selectedTruck, capableTrucks, truckLoads),
+    [selectedTotalWeightKg, selectedTruck, capableTrucks, truckLoads],
   );
 
   const driverOptions = useMemo<SearchableOptionRow[]>(
@@ -373,6 +358,9 @@ export function AssignDeliveryDialog({ open, onOpenChange }: AssignDeliveryDialo
     Boolean(scheduledDate);
 
   function toggleOrder(key: string) {
+    const order = orderByKey.get(key);
+    if (order?.assignedDeliveryUid != null) return;
+    setTypedOrderError(null);
     setSelectedOrderKeys((prev) => {
       if (prev.includes(key)) return prev.filter((value) => value !== key);
       if (prev.length >= MAX_ORDERS_PER_ROUTE) return prev;
@@ -388,7 +376,20 @@ export function AssignDeliveryDialog({ open, onOpenChange }: AssignDeliveryDialo
         order.docNumber.toLowerCase() === typed.toLowerCase() ||
         order.orderNumber.toLowerCase() === typed.toLowerCase(),
     );
-    if (!match) return;
+    if (!match) {
+      setTypedOrderError(`Sales order "${typed}" was not found in open ERP orders.`);
+      return;
+    }
+    if (match.assignedDeliveryUid != null) {
+      const target =
+        match.assignedTruckRegistration ||
+        match.assignedRouteCode ||
+        match.assignedDeliveryNumber ||
+        'another truck';
+      setTypedOrderError(`${match.orderNumber} is already assigned to ${target}.`);
+      return;
+    }
+    setTypedOrderError(null);
     const key = orderOptionValue(match.store, match.docNumber);
     setSelectedOrderKeys((prev) => {
       if (prev.includes(key) || prev.length >= MAX_ORDERS_PER_ROUTE) return prev;
@@ -402,6 +403,7 @@ export function AssignDeliveryDialog({ open, onOpenChange }: AssignDeliveryDialo
     setSelectedOrderKeys([]);
     setOrderSearch('');
     setTypedSalesOrder('');
+    setTypedOrderError(null);
     setVehicleAssetUid(EMPTY_VALUE);
     setDepartureFuelLitres('');
     setDriverUid(EMPTY_VALUE);
@@ -518,7 +520,10 @@ export function AssignDeliveryDialog({ open, onOpenChange }: AssignDeliveryDialo
                 <div className="flex gap-2">
                   <Input
                     value={typedSalesOrder}
-                    onChange={(event) => setTypedSalesOrder(event.target.value)}
+                    onChange={(event) => {
+                      setTypedSalesOrder(event.target.value);
+                      setTypedOrderError(null);
+                    }}
                     placeholder="Type sales order number…"
                     aria-label="Type sales order number"
                     onKeyDown={(event) => {
@@ -533,6 +538,9 @@ export function AssignDeliveryDialog({ open, onOpenChange }: AssignDeliveryDialo
                   </Button>
                 </div>
               </div>
+              {typedOrderError ? (
+                <p className="text-xs text-amber-600 dark:text-amber-300">{typedOrderError}</p>
+              ) : null}
               <div className="border-border max-h-48 overflow-y-auto rounded-md border">
                 {filteredOrders.length === 0 ? (
                   <p className="text-muted-foreground p-3 text-sm">No open ERP sales orders match.</p>
@@ -540,49 +548,97 @@ export function AssignDeliveryDialog({ open, onOpenChange }: AssignDeliveryDialo
                   <ul className="divide-border divide-y">
                     {filteredOrders.map((order) => {
                       const key = orderOptionValue(order.store, order.docNumber);
-                      const selected = selectedOrderKeys.includes(key);
+                      const isAssigned = order.assignedDeliveryUid != null;
+                      const selected = !isAssigned && selectedOrderKeys.includes(key);
                       const atCap = !selected && selectedOrderKeys.length >= MAX_ORDERS_PER_ROUTE;
                       const weightLabel =
                         order.weightKg != null && order.weightKg > 0
                           ? formatWeightKg(order.weightKg)
                           : 'Weight n/a';
+                      const assignedTarget =
+                        order.assignedTruckRegistration ||
+                        order.assignedRouteCode ||
+                        order.assignedDeliveryNumber ||
+                        'another truck';
                       return (
                         <li key={key}>
                           <button
                             type="button"
-                            disabled={atCap}
+                            disabled={isAssigned || atCap}
                             onClick={() => toggleOrder(key)}
                             className={cn(
                               'flex w-full items-start gap-3 px-3 py-2 text-left text-sm transition-colors',
-                              selected ? 'bg-violet-500/10' : 'hover:bg-muted/60',
-                              atCap ? 'opacity-50' : '',
+                              isAssigned
+                                ? 'cursor-not-allowed bg-emerald-500/10 text-emerald-950 dark:bg-emerald-500/15 dark:text-emerald-100'
+                                : selected
+                                  ? 'bg-violet-500/10'
+                                  : 'hover:bg-muted/60',
+                              !isAssigned && atCap ? 'opacity-50' : '',
                             )}
                             aria-pressed={selected}
+                            aria-disabled={isAssigned || atCap}
+                            title={
+                              isAssigned
+                                ? `Already assigned to ${assignedTarget}`
+                                : undefined
+                            }
                           >
-                            <span
-                              className={cn(
-                                'mt-0.5 flex size-4 shrink-0 items-center justify-center rounded border',
-                                selected
-                                  ? 'border-violet-600 bg-violet-600 text-white'
-                                  : 'border-border',
-                              )}
-                            >
-                              {selected ? <Check className="size-3" /> : null}
-                            </span>
+                            {isAssigned ? (
+                              <span className="mt-0.5 flex size-4 shrink-0 items-center justify-center rounded border border-emerald-500/50 bg-emerald-500/20 text-emerald-700 dark:text-emerald-300">
+                                <Truck className="size-3" aria-hidden />
+                              </span>
+                            ) : (
+                              <span
+                                className={cn(
+                                  'mt-0.5 flex size-4 shrink-0 items-center justify-center rounded border',
+                                  selected
+                                    ? 'border-violet-600 bg-violet-600 text-white'
+                                    : 'border-border',
+                                )}
+                              >
+                                {selected ? <Check className="size-3" /> : null}
+                              </span>
+                            )}
                             <span className="min-w-0 flex-1">
                               <span className="flex flex-wrap items-center justify-between gap-2 font-medium">
                                 <span className="flex items-center gap-2">
-                                  <Package className="size-3.5 shrink-0" />
+                                  {isAssigned ? (
+                                    <Truck
+                                      className="size-3.5 shrink-0 text-emerald-600 dark:text-emerald-400"
+                                      aria-hidden
+                                    />
+                                  ) : (
+                                    <Package className="size-3.5 shrink-0" aria-hidden />
+                                  )}
                                   {order.orderNumber}
                                 </span>
-                                <span className="text-xs font-normal text-muted-foreground">
-                                  {weightLabel}
+                                <span
+                                  className={cn(
+                                    'text-xs font-normal',
+                                    isAssigned
+                                      ? 'font-medium text-emerald-700 dark:text-emerald-300'
+                                      : 'text-muted-foreground',
+                                  )}
+                                >
+                                  {isAssigned
+                                    ? `Assigned · ${assignedTarget}`
+                                    : weightLabel}
                                 </span>
                               </span>
-                              <span className="text-muted-foreground block text-xs">
+                              <span
+                                className={cn(
+                                  'block text-xs',
+                                  isAssigned
+                                    ? 'text-emerald-800/80 dark:text-emerald-200/80'
+                                    : 'text-muted-foreground',
+                                )}
+                              >
                                 {order.clientName || 'No client'} · {order.itemCount} lines · store{' '}
                                 {order.store}
                                 {order.glCode?.trim() ? ` · GL ${order.glCode.trim()}` : ''}
+                                {isAssigned && order.weightKg != null && order.weightKg > 0
+                                  ? ` · ${weightLabel}`
+                                  : ''}
                               </span>
                             </span>
                           </button>
@@ -596,20 +652,40 @@ export function AssignDeliveryDialog({ open, onOpenChange }: AssignDeliveryDialo
 
             {isTruckOverloaded ? (
               <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-red-500/40 bg-red-500/10 px-3 py-2.5 text-xs text-red-900 dark:text-red-200">
-                <span className="flex items-center gap-2">
-                  <AlertTriangle className="size-4 shrink-0 text-red-500" aria-hidden />
-                  {overloadByKg != null
-                    ? `Truck overloaded by ${overloadByKg.toLocaleString('en-ZA')} kg (load ${selectedTotalWeightKg.toLocaleString('en-ZA')} kg > capacity ${selectedTruckCapacityKg?.toLocaleString('en-ZA')} kg). Switch to a higher-tonnage truck.`
-                    : 'Selected truck has no rated tonnage set for this load. Switch to a rated truck or set tonnage under Assets.'}
+                <span className="flex min-w-0 flex-1 items-start gap-2">
+                  <AlertTriangle className="mt-0.5 size-4 shrink-0 text-red-500" aria-hidden />
+                  <span>
+                    {overloadByKg != null
+                      ? `Truck overloaded by ${overloadByKg.toLocaleString('en-ZA')} kg (load ${projectedTotalWeightKg.toLocaleString('en-ZA')} kg > capacity ${selectedTruckCapacityKg?.toLocaleString('en-ZA')} kg).`
+                      : 'Selected truck has no rated tonnage set for this load.'}{' '}
+                    {suggestedTruck ? (
+                      <>
+                        Suggested larger truck:{' '}
+                        <span className="font-medium">
+                          {formatSuggestedTruckLabel(suggestedTruck.truck)}
+                        </span>{' '}
+                        ({suggestedTruck.capacityKg.toLocaleString('en-ZA')} kg ·{' '}
+                        {suggestedTruck.utilizationPct}% load).
+                      </>
+                    ) : capableTrucks.length === 0 ? (
+                      'No single truck in your fleet fits this load — split the selected orders across multiple loads.'
+                    ) : (
+                      'Switch to a higher-tonnage truck.'
+                    )}
+                  </span>
                 </span>
                 <Button
                   type="button"
                   size="sm"
                   variant="destructive"
-                  className="h-7 bg-red-600 text-white hover:bg-red-700"
-                  onClick={() => setVehicleAssetUid(EMPTY_VALUE)}
+                  className="h-7 shrink-0 bg-red-600 text-white hover:bg-red-700"
+                  onClick={() =>
+                    setVehicleAssetUid(
+                      suggestedTruck ? String(suggestedTruck.truck.uid) : EMPTY_VALUE,
+                    )
+                  }
                 >
-                  Switch truck
+                  {suggestedTruck ? 'Switch truck' : 'Clear truck'}
                 </Button>
               </div>
             ) : selectedTotalWeightKg > 0 && capableTrucks.length === 0 ? (
@@ -653,9 +729,18 @@ export function AssignDeliveryDialog({ open, onOpenChange }: AssignDeliveryDialo
                       <span className="text-muted-foreground">
                         Loaded:{' '}
                         <span className="font-medium text-foreground">
-                          {selectedTotalWeightKg.toLocaleString('en-ZA', { maximumFractionDigits: 2 })} kg
+                          {projectedTotalWeightKg.toLocaleString('en-ZA', { maximumFractionDigits: 2 })} kg
                         </span>{' '}
                         / {selectedTruckCapacityKg.toLocaleString('en-ZA')} kg
+                        {selectedTruckExistingKg > 0 ? (
+                          <span className="ml-1 text-emerald-600 dark:text-emerald-400">
+                            ({selectedTruckExistingKg.toLocaleString('en-ZA', { maximumFractionDigits: 2 })} kg assigned
+                            {selectedTotalWeightKg > 0
+                              ? ` + ${selectedTotalWeightKg.toLocaleString('en-ZA', { maximumFractionDigits: 2 })} kg new`
+                              : ''}
+                            )
+                          </span>
+                        ) : null}
                       </span>
                       <span
                         className={cn(
@@ -687,32 +772,46 @@ export function AssignDeliveryDialog({ open, onOpenChange }: AssignDeliveryDialo
                     No tonnage set — edit this truck under Assets to add payload (kg).
                   </p>
                 ) : null}
-                {suggestedSmallerTruck ? (
-                  <div className="flex flex-wrap items-center justify-between gap-2 rounded-md border border-sky-500/40 bg-sky-500/10 px-3 py-2 text-xs text-sky-900 dark:text-sky-200">
+                {suggestedTruck && !isTruckOverloaded ? (
+                  <div
+                    className={cn(
+                      'flex flex-wrap items-center justify-between gap-2 rounded-md border px-3 py-2 text-xs',
+                      suggestedTruck.direction === 'larger'
+                        ? 'border-amber-500/40 bg-amber-500/10 text-amber-900 dark:text-amber-200'
+                        : 'border-sky-500/40 bg-sky-500/10 text-sky-900 dark:text-sky-200',
+                    )}
+                  >
                     <span className="flex min-w-0 flex-1 items-start gap-2">
-                      <Lightbulb className="mt-0.5 size-4 shrink-0 text-sky-500" aria-hidden />
+                      <Lightbulb
+                        className={cn(
+                          'mt-0.5 size-4 shrink-0',
+                          suggestedTruck.direction === 'larger' ? 'text-amber-500' : 'text-sky-500',
+                        )}
+                        aria-hidden
+                      />
                       <span>
                         This load uses{' '}
                         <span className="font-medium">{loadUtilizationPct ?? 0}%</span> of the
-                        selected truck (ideal 60–80%). Consider a smaller truck:{' '}
+                        selected truck (ideal 60–80%). Consider a{' '}
+                        {suggestedTruck.direction === 'larger' ? 'larger' : 'smaller'} truck:{' '}
                         <span className="font-medium">
-                          {[
-                            assetTitle(suggestedSmallerTruck.truck),
-                            suggestedSmallerTruck.truck.registrationPlate?.trim(),
-                          ]
-                            .filter(Boolean)
-                            .join(' · ')}
+                          {formatSuggestedTruckLabel(suggestedTruck.truck)}
                         </span>{' '}
-                        ({suggestedSmallerTruck.capacityKg.toLocaleString('en-ZA')} kg ·{' '}
-                        {suggestedSmallerTruck.utilizationPct}% load).
+                        ({suggestedTruck.capacityKg.toLocaleString('en-ZA')} kg ·{' '}
+                        {suggestedTruck.utilizationPct}% load).
                       </span>
                     </span>
                     <Button
                       type="button"
                       size="sm"
                       variant="outline"
-                      className="h-7 shrink-0 border-sky-500/40 bg-sky-500/15 text-sky-900 hover:bg-sky-500/25 dark:text-sky-100"
-                      onClick={() => setVehicleAssetUid(String(suggestedSmallerTruck.truck.uid))}
+                      className={cn(
+                        'h-7 shrink-0',
+                        suggestedTruck.direction === 'larger'
+                          ? 'border-amber-500/40 bg-amber-500/15 text-amber-900 hover:bg-amber-500/25 dark:text-amber-100'
+                          : 'border-sky-500/40 bg-sky-500/15 text-sky-900 hover:bg-sky-500/25 dark:text-sky-100',
+                      )}
+                      onClick={() => setVehicleAssetUid(String(suggestedTruck.truck.uid))}
                     >
                       Switch truck
                     </Button>

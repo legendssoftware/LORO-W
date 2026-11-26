@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
-import { PackageCheck, PackagePlus, Route } from 'lucide-react';
+import { Fuel, MapPin, PackageCheck, PackagePlus, PackageX, Route, Truck } from 'lucide-react';
 import {
   filterDeliveries,
   useAssetsInfinite,
@@ -27,6 +27,10 @@ import { getQueryErrorMessage } from '@/lib/api/query-error';
 import { appPageMainClass } from '@/lib/page-shell';
 import { cn } from '@/lib/utils';
 import { AssignDeliveryDialog } from '@/app/deliveries/assign-delivery-dialog';
+import {
+  CancelDeliveryDialog,
+  type CancelDeliveryTarget,
+} from '@/app/deliveries/cancel-delivery-form';
 import { DeliveryDetailDialog } from '@/app/deliveries/delivery-detail-dialog';
 import { DeliveriesFiltersBar } from '@/app/deliveries/deliveries-filters-bar';
 import {
@@ -44,6 +48,7 @@ import {
   formatDeliveryTimestamp,
   formatWeightKg,
   loadedReadyButtonClassName,
+  loadingCancelledButtonClassName,
   markLoadedButtonClassName,
   routePlannedButtonClassName,
 } from '@/app/deliveries/format';
@@ -72,6 +77,120 @@ function canPlanRoute(row: DeliverySummary): boolean {
   return canMarkDeliveryReady(row);
 }
 
+interface DeliveryRouteGroup {
+  key: string;
+  primary: DeliverySummary;
+  stops: DeliverySummary[];
+  displayStops: DeliverySummary[];
+  status: DeliveryStatus;
+  totalWeightKg: number | null;
+  invoiceLabels: string[];
+  clientNames: string[];
+  avgRating: number | null;
+  allLoaded: boolean;
+  loadedAt: string | null;
+  anyPlanned: boolean;
+  canMarkReady: boolean;
+  canPlan: boolean;
+}
+
+/**
+ * Groups deliveries sharing the same truck/driver route and scheduled day into a single table row,
+ * so multi-stop truck loads show once and open all their invoices when clicked.
+ */
+function groupDeliveriesByRoute(deliveries: readonly DeliverySummary[]): DeliveryRouteGroup[] {
+  const buckets = new Map<string, DeliverySummary[]>();
+  const order: string[] = [];
+
+  for (const row of deliveries) {
+    const route = row.routeCode.trim();
+    const day = row.scheduledDate.trim();
+    const key =
+      route.length > 0 && row.driverUid > 0 && day.length > 0
+        ? `route:${row.driverUid}:${route}:${day}`
+        : `uid:${row.uid}`;
+    const list = buckets.get(key);
+    if (list) {
+      list.push(row);
+    } else {
+      buckets.set(key, [row]);
+      order.push(key);
+    }
+  }
+
+  return order.map((key) => {
+    const rawStops = buckets.get(key) ?? [];
+    const stops = rawStops.slice().sort((a, b) => {
+      const seqA = a.stopSequence ?? Number.MAX_SAFE_INTEGER;
+      const seqB = b.stopSequence ?? Number.MAX_SAFE_INTEGER;
+      if (seqA !== seqB) return seqA - seqB;
+      return a.uid - b.uid;
+    });
+    const activeStops = stops.filter((s) => s.status !== 'cancelled');
+    const displayStops = activeStops.length > 0 ? activeStops : stops;
+    const primary =
+      displayStops.find((s) => s.status === 'in_progress' || s.status === 'assigned') ??
+      displayStops[0];
+
+    let status: DeliveryStatus = 'cancelled';
+    if (displayStops.some((s) => s.status === 'in_progress')) status = 'in_progress';
+    else if (displayStops.some((s) => s.status === 'assigned')) status = 'assigned';
+    else if (displayStops.some((s) => s.status === 'recorded')) status = 'recorded';
+
+    const weightSum = displayStops.reduce((sum, s) => {
+      const w = s.totalWeightKg;
+      return w != null && Number.isFinite(w) && w > 0 ? sum + w : sum;
+    }, 0);
+    const totalWeightKg = weightSum > 0 ? Math.round(weightSum * 100) / 100 : null;
+
+    const invoiceLabels = Array.from(
+      new Set(
+        displayStops
+          .map((s) => (s.invoiceNumber || s.orderNumber || '').trim())
+          .filter((v) => v.length > 0),
+      ),
+    );
+    const clientNames = Array.from(
+      new Set(displayStops.map((s) => (s.clientName || '').trim()).filter((v) => v.length > 0)),
+    );
+    const rated = displayStops
+      .map((s) => s.ratingScore)
+      .filter((r): r is number => r != null && Number.isFinite(r));
+    const avgRating =
+      rated.length > 0
+        ? Math.round((rated.reduce((sum, r) => sum + r, 0) / rated.length) * 10) / 10
+        : null;
+
+    const allLoaded = displayStops.length > 0 && displayStops.every((s) => s.routeReady);
+    const loadedAt =
+      displayStops
+        .map((s) => s.routeReadyAt)
+        .filter((v): v is string => Boolean(v))
+        .sort()
+        .at(-1) ?? null;
+    const anyPlanned = displayStops.some((s) => Boolean(s.routePlanned));
+    const canMarkReady = displayStops.some((s) => canMarkDeliveryReady(s) && !s.routeReady);
+    const canPlan = displayStops.some((s) => canPlanRoute(s));
+
+    return {
+      key,
+      primary,
+      stops,
+      displayStops,
+      status,
+      totalWeightKg,
+      invoiceLabels,
+      clientNames,
+      avgRating,
+      allLoaded,
+      loadedAt,
+      anyPlanned,
+      canMarkReady,
+      canPlan,
+    };
+  });
+}
+
 export function DeliveriesListContent() {
   const { t } = useTranslation('screens');
   const { isTokenReady } = useTokenReady();
@@ -86,6 +205,7 @@ export function DeliveriesListContent() {
   const [search, setSearch] = useState('');
   const [assignOpen, setAssignOpen] = useState(false);
   const [selectedUid, setSelectedUid] = useState<number | null>(null);
+  const [cancelTarget, setCancelTarget] = useState<CancelDeliveryTarget | null>(null);
   const [markLoadedTarget, setMarkLoadedTarget] = useState<MarkLoadedRouteTarget | null>(null);
   const [planRouteTarget, setPlanRouteTarget] = useState<PlanRouteTarget | null>(null);
   const [page, setPage] = useState(1);
@@ -121,13 +241,14 @@ export function DeliveriesListContent() {
       return false;
     });
   }, [query.data?.deliveries, search, vehicleAssetUid, trucks]);
+  const groupedRows = useMemo(() => groupDeliveriesByRoute(rows), [rows]);
   const hasSearch = search.trim().length > 0;
-  const total = rows.length;
+  const total = groupedRows.length;
   const totalPages = total === 0 ? 0 : Math.ceil(total / pageSize);
   const pageRows = useMemo(() => {
     const start = (page - 1) * pageSize;
-    return rows.slice(start, start + pageSize);
-  }, [rows, page, pageSize]);
+    return groupedRows.slice(start, start + pageSize);
+  }, [groupedRows, page, pageSize]);
 
   useEffect(() => {
     setPage(1);
@@ -181,7 +302,20 @@ export function DeliveriesListContent() {
         onOpenChange={(open) => {
           if (!open) setSelectedUid(null);
         }}
+        onRequestCancel={(target) => {
+          setSelectedUid(null);
+          setCancelTarget(target);
+        }}
       />
+      {canDispatch ? (
+        <CancelDeliveryDialog
+          target={cancelTarget}
+          open={cancelTarget != null}
+          onOpenChange={(open) => {
+            if (!open) setCancelTarget(null);
+          }}
+        />
+      ) : null}
 
       <DeliveriesFiltersBar
         date={date}
@@ -223,7 +357,11 @@ export function DeliveriesListContent() {
         {...(query.isLoading ? {} : { 'data-tour': 'deliveries-list' })}
       >
         <div className="min-h-0 flex-1 overflow-y-auto">
-          {query.isLoading ? <LoadingSpinner /> : null}
+          {query.isLoading ? (
+            <div className="flex h-full min-h-[240px] w-full items-center justify-center">
+              <LoadingSpinner />
+            </div>
+          ) : null}
           {query.isError ? (
             <p className="text-destructive p-4 text-sm">{getQueryErrorMessage(query.error)}</p>
           ) : null}
@@ -250,143 +388,220 @@ export function DeliveriesListContent() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {pageRows.map((row) => (
-                  <TableRow
-                    key={row.uid}
-                    tabIndex={0}
-                    className="cursor-pointer"
-                    aria-label={`Open ${row.deliveryNumber}`}
-                    onClick={() => setSelectedUid(row.uid)}
-                    onKeyDown={(event) => {
-                      if (event.key === 'Enter' || event.key === ' ') {
-                        event.preventDefault();
-                        setSelectedUid(row.uid);
+                {pageRows.map((group) => {
+                  const row = group.primary;
+                  const stopCount = group.displayStops.length;
+                  const isMultiStop = stopCount > 1;
+                  return (
+                    <TableRow
+                      key={group.key}
+                      tabIndex={0}
+                      className="cursor-pointer"
+                      aria-label={
+                        isMultiStop
+                          ? `Open ${row.deliveryNumber} (${stopCount} invoices)`
+                          : `Open ${row.deliveryNumber}`
                       }
-                    }}
-                  >
-                    <TableCell>
-                      <span className="font-medium">{row.deliveryNumber}</span>
-                      <span className="text-muted-foreground block text-xs">{row.scheduledDate}</span>
-                    </TableCell>
-                    <TableCell>{row.invoiceNumber || row.orderNumber || '—'}</TableCell>
-                    <TableCell>
-                      {row.clientName || '—'}
-                      {row.clientAddress ? (
-                        <span className="text-muted-foreground block text-xs">{row.clientAddress}</span>
-                      ) : null}
-                    </TableCell>
-                    <TableCell>
-                      {row.routeCode || '—'}
-                      {row.stopSequence != null ? (
-                        <span className="text-muted-foreground block text-xs">Stop {row.stopSequence}</span>
-                      ) : null}
-                      {row.truckRegistration?.trim() ? (
-                        <span className="text-muted-foreground block text-xs">{row.truckRegistration.trim()}</span>
-                      ) : null}
-                      {row.departureFuelLitres != null ? (
-                        <span className="text-muted-foreground block text-xs">
-                          {row.departureFuelLitres} L filled
-                        </span>
-                      ) : null}
-                    </TableCell>
-                    <TableCell className="text-sm">
-                      {formatArrivalWindow(row.estimatedWindowStart, row.estimatedWindowEnd, row.scheduledDate)}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant="outline" className={deliveryStatusClassName(row.status)}>
-                        {formatDeliveryStatus(row.status)}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{row.ratingScore == null ? '—' : `${row.ratingScore}/5`}</TableCell>
-                    <TableCell className="text-muted-foreground text-sm whitespace-nowrap">
-                      {formatWeightKg(row.totalWeightKg)}
-                    </TableCell>
-                    {canDispatch ? (
+                      onClick={() => setSelectedUid(row.uid)}
+                      onKeyDown={(event) => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                          event.preventDefault();
+                          setSelectedUid(row.uid);
+                        }
+                      }}
+                    >
                       <TableCell>
-                        <div className="flex flex-wrap items-start gap-2">
-                          {row.routeReady ? (
-                            <div className="flex flex-col gap-0.5">
+                        <span className="font-medium">
+                          {row.deliveryNumber}
+                          {isMultiStop ? (
+                            <span className="text-muted-foreground ml-1.5 text-xs font-normal">
+                              (+{stopCount - 1})
+                            </span>
+                          ) : null}
+                        </span>
+                        <span className="text-muted-foreground block text-xs">{row.scheduledDate}</span>
+                      </TableCell>
+                      <TableCell>
+                        {group.invoiceLabels.length === 0 ? (
+                          '—'
+                        ) : group.invoiceLabels.length === 1 ? (
+                          group.invoiceLabels[0]
+                        ) : (
+                          <>
+                            <span>{group.invoiceLabels[0]}</span>
+                            <span className="text-muted-foreground block text-xs">
+                              +{group.invoiceLabels.length - 1} more ({group.invoiceLabels.length}{' '}
+                              invoices)
+                            </span>
+                          </>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        {group.clientNames.length === 0 ? (
+                          '—'
+                        ) : group.clientNames.length === 1 ? (
+                          <>
+                            {group.clientNames[0]}
+                            {!isMultiStop && row.clientAddress ? (
+                              <span className="text-muted-foreground block text-xs">
+                                {row.clientAddress}
+                              </span>
+                            ) : null}
+                          </>
+                        ) : (
+                          <>
+                            <span>{group.clientNames[0]}</span>
+                            <span className="text-muted-foreground block text-xs">
+                              +{group.clientNames.length - 1} more clients
+                            </span>
+                          </>
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <span className="font-medium">{row.routeCode || '—'}</span>
+                        {isMultiStop ? (
+                          <span className="text-muted-foreground mt-0.5 flex items-center gap-1 text-xs">
+                            <MapPin className="size-3 shrink-0" aria-hidden />
+                            {stopCount} stops
+                          </span>
+                        ) : row.stopSequence != null ? (
+                          <span className="text-muted-foreground mt-0.5 flex items-center gap-1 text-xs">
+                            <MapPin className="size-3 shrink-0" aria-hidden />
+                            Stop {row.stopSequence}
+                          </span>
+                        ) : null}
+                        {row.truckRegistration?.trim() ? (
+                          <span className="text-muted-foreground mt-0.5 flex items-center gap-1 text-xs">
+                            <Truck className="size-3 shrink-0" aria-hidden />
+                            {row.truckRegistration.trim()}
+                          </span>
+                        ) : null}
+                        {row.departureFuelLitres != null ? (
+                          <span className="text-muted-foreground mt-0.5 flex items-center gap-1 text-xs">
+                            <Fuel className="size-3 shrink-0" aria-hidden />
+                            {row.departureFuelLitres} L filled
+                          </span>
+                        ) : null}
+                      </TableCell>
+                      <TableCell className="text-sm">
+                        {formatArrivalWindow(
+                          row.estimatedWindowStart,
+                          row.estimatedWindowEnd,
+                          row.scheduledDate,
+                        )}
+                      </TableCell>
+                      <TableCell>
+                        <Badge variant="outline" className={deliveryStatusClassName(group.status)}>
+                          {formatDeliveryStatus(group.status)}
+                        </Badge>
+                      </TableCell>
+                      <TableCell>
+                        {group.avgRating == null ? '—' : `${group.avgRating}/5`}
+                      </TableCell>
+                      <TableCell className="text-muted-foreground text-sm whitespace-nowrap">
+                        {formatWeightKg(group.totalWeightKg)}
+                      </TableCell>
+                      {canDispatch ? (
+                        <TableCell>
+                          <div className="flex flex-wrap items-start gap-2">
+                            {group.allLoaded ? (
+                              <div className="flex flex-col gap-0.5">
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  className={cn('h-9', loadedReadyButtonClassName)}
+                                  disabled
+                                  aria-label="Loaded — warehouse load already acknowledged"
+                                  title={
+                                    group.loadedAt
+                                      ? `Loaded at ${formatDeliveryTimestamp(group.loadedAt)}`
+                                      : 'Warehouse load is marked loaded and ready'
+                                  }
+                                >
+                                  <PackageCheck className="size-4 shrink-0" aria-hidden />
+                                  Loaded
+                                </Button>
+                                {group.loadedAt ? (
+                                  <span className="text-muted-foreground text-[11px] leading-tight">
+                                    {formatDeliveryTimestamp(group.loadedAt)}
+                                  </span>
+                                ) : null}
+                              </div>
+                            ) : group.status === 'cancelled' ? (
                               <Button
                                 type="button"
                                 variant="outline"
-                                className={cn('h-9', loadedReadyButtonClassName)}
+                                className={cn('h-9', loadingCancelledButtonClassName)}
                                 disabled
-                                aria-label="Loaded — warehouse load already acknowledged"
-                                title={
-                                  row.routeReadyAt
-                                    ? `Loaded at ${formatDeliveryTimestamp(row.routeReadyAt)}`
-                                    : 'Warehouse load is marked loaded and ready'
-                                }
+                                aria-label="Loading cancelled — delivery was cancelled before loading"
+                                title="Delivery was cancelled before warehouse loading"
+                              >
+                                <PackageX className="size-4 shrink-0" aria-hidden />
+                                Loading cancelled
+                              </Button>
+                            ) : group.canMarkReady ? (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                className={cn('h-9', markLoadedButtonClassName)}
+                                aria-label="Mark as Loaded — warehouse load acknowledgment"
+                                title="Opens the invoice load checklist for this route, then texts the customer and driver"
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  setMarkLoadedTarget({
+                                    driverUid: row.driverUid,
+                                    routeCode: row.routeCode,
+                                    scheduledDate: row.scheduledDate,
+                                  });
+                                }}
                               >
                                 <PackageCheck className="size-4 shrink-0" aria-hidden />
-                                Loaded
+                                Mark as Loaded
                               </Button>
-                              {row.routeReadyAt ? (
-                                <span className="text-muted-foreground text-[11px] leading-tight">
-                                  {formatDeliveryTimestamp(row.routeReadyAt)}
-                                </span>
-                              ) : null}
-                            </div>
-                          ) : canMarkDeliveryReady(row) ? (
-                            <Button
-                              type="button"
-                              variant="outline"
-                              className={cn('h-9', markLoadedButtonClassName)}
-                              aria-label="Mark as Loaded — warehouse load acknowledgment"
-                              title="Opens the invoice load checklist, then texts the customer and driver"
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                setMarkLoadedTarget({
-                                  driverUid: row.driverUid,
-                                  routeCode: row.routeCode,
-                                  scheduledDate: row.scheduledDate,
-                                });
-                              }}
-                            >
-                              <PackageCheck className="size-4 shrink-0" aria-hidden />
-                              Mark as Loaded
-                            </Button>
-                          ) : null}
-                          {canPlanRoute(row) ? (
-                            <Button
-                              type="button"
-                              variant="outline"
-                              className={cn(
-                                'h-9',
-                                row.routePlanned
-                                  ? routePlannedButtonClassName
-                                  : markLoadedButtonClassName,
-                              )}
-                              aria-label={
-                                row.routePlanned
-                                  ? 'Route planned — click to review or re-plan'
-                                  : 'Plan route — Google-optimized stop order'
-                              }
-                              title={
-                                row.routePlanned
-                                  ? 'Route order has been planned and saved. Click to review or re-plan.'
-                                  : 'Opens a proposed stop order from Google Directions'
-                              }
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                setPlanRouteTarget({
-                                  driverUid: row.driverUid,
-                                  routeCode: row.routeCode,
-                                  scheduledDate: row.scheduledDate,
-                                });
-                              }}
-                            >
-                              <Route className="size-4 shrink-0" aria-hidden />
-                              {row.routePlanned ? 'Route planned' : 'Plan route'}
-                            </Button>
-                          ) : !row.routeReady && !canMarkDeliveryReady(row) ? (
-                            '—'
-                          ) : null}
-                        </div>
-                      </TableCell>
-                    ) : null}
-                  </TableRow>
-                ))}
+                            ) : null}
+                            {group.canPlan ? (
+                              <Button
+                                type="button"
+                                variant="outline"
+                                className={cn(
+                                  'h-9',
+                                  group.anyPlanned
+                                    ? routePlannedButtonClassName
+                                    : markLoadedButtonClassName,
+                                )}
+                                aria-label={
+                                  group.anyPlanned
+                                    ? 'Route planned — click to review or re-plan'
+                                    : 'Plan route — Google-optimized stop order for all stops on this truck'
+                                }
+                                title={
+                                  group.anyPlanned
+                                    ? 'Route order has been planned and saved. Click to review or re-plan.'
+                                    : 'Opens a proposed stop order from Google Directions for all stops on this truck'
+                                }
+                                onClick={(event) => {
+                                  event.stopPropagation();
+                                  setPlanRouteTarget({
+                                    driverUid: row.driverUid,
+                                    routeCode: row.routeCode,
+                                    scheduledDate: row.scheduledDate,
+                                  });
+                                }}
+                              >
+                                <Route className="size-4 shrink-0" aria-hidden />
+                                {group.anyPlanned ? 'Route planned' : 'Plan route'}
+                              </Button>
+                            ) : !group.allLoaded &&
+                              group.status !== 'cancelled' &&
+                              !group.canMarkReady ? (
+                              '—'
+                            ) : null}
+                          </div>
+                        </TableCell>
+                      ) : null}
+                    </TableRow>
+                  );
+                })}
               </TableBody>
             </Table>
           ) : null}

@@ -105,6 +105,10 @@ export const markLoadedButtonClassName =
 export const loadedReadyButtonClassName =
   'gap-1.5 border-emerald-500/50 bg-emerald-500/15 text-emerald-800 opacity-100 disabled:opacity-100 disabled:border-emerald-500/50 disabled:bg-emerald-500/15 disabled:text-emerald-800 dark:border-emerald-400/40 dark:bg-emerald-500/20 dark:text-emerald-200 dark:disabled:border-emerald-400/40 dark:disabled:bg-emerald-500/20 dark:disabled:text-emerald-200';
 
+/** Red disabled button when a delivery was cancelled before warehouse loading. */
+export const loadingCancelledButtonClassName =
+  'gap-1.5 border-red-500/40 bg-red-500/10 text-red-800 opacity-100 disabled:opacity-100 disabled:border-red-500/40 disabled:bg-red-500/10 disabled:text-red-800 dark:border-red-400/40 dark:bg-red-500/15 dark:text-red-200 dark:disabled:border-red-400/40 dark:disabled:bg-red-500/15 dark:disabled:text-red-200';
+
 /** Green interactive button once dispatch has planned and accepted a route. */
 export const routePlannedButtonClassName =
   'gap-1.5 border-emerald-500/50 bg-emerald-500/15 text-emerald-800 hover:bg-emerald-500/25 hover:text-emerald-900 dark:border-emerald-400/40 dark:bg-emerald-500/20 dark:text-emerald-200 dark:hover:bg-emerald-500/30 dark:hover:text-emerald-100';
