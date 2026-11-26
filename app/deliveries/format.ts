@@ -2,6 +2,7 @@ import type {
   DeliveryCancellationReason,
   DeliveryCancellationSide,
   DeliveryException,
+  DeliveryKind,
   DeliveryStatus,
 } from '@/api/types/epod';
 
@@ -100,9 +101,42 @@ export function deliveryStatusClassName(status: DeliveryStatus): string {
 export const markLoadedButtonClassName =
   'gap-1.5 border-amber-500/50 bg-amber-500/15 text-amber-950 hover:bg-amber-500/25 hover:text-amber-950 dark:border-amber-400/40 dark:bg-amber-500/20 dark:text-amber-100 dark:hover:bg-amber-500/30 dark:hover:text-amber-50';
 
-/** Green disabled button once dispatch has Marked loaded. */
+/** Green disabled button once dispatch has Marked as Loaded. */
 export const loadedReadyButtonClassName =
   'gap-1.5 border-emerald-500/50 bg-emerald-500/15 text-emerald-800 opacity-100 disabled:opacity-100 disabled:border-emerald-500/50 disabled:bg-emerald-500/15 disabled:text-emerald-800 dark:border-emerald-400/40 dark:bg-emerald-500/20 dark:text-emerald-200 dark:disabled:border-emerald-400/40 dark:disabled:bg-emerald-500/20 dark:disabled:text-emerald-200';
+
+/** Green interactive button once dispatch has planned and accepted a route. */
+export const routePlannedButtonClassName =
+  'gap-1.5 border-emerald-500/50 bg-emerald-500/15 text-emerald-800 hover:bg-emerald-500/25 hover:text-emerald-900 dark:border-emerald-400/40 dark:bg-emerald-500/20 dark:text-emerald-200 dark:hover:bg-emerald-500/30 dark:hover:text-emerald-100';
+
+/** Human label for a delivery type. Exhaustive so new types fail at compile time. */
+export function formatDeliveryType(kind: DeliveryKind | string | null | undefined): string {
+  switch (kind as DeliveryKind) {
+    case 'branch_to_branch':
+      return 'Branch to Branch';
+    case 'branch_to_customer':
+      return 'Branch to Customer';
+    case 'hq_to_customer':
+      return 'HQ to Customer';
+    case 'branch_to_hq':
+      return 'Branch to HQ';
+    case 'customer_to_branch':
+      return 'Customer to Branch';
+    case 'customer_to_hq':
+      return 'Customer to HQ';
+    default: {
+      if (kind === 'ibt') return 'Branch to Branch';
+      return 'Branch to Customer';
+    }
+  }
+}
+
+/** Formats a weight in kg cleanly (e.g. `1,240 kg` or `1,240.5 kg`). */
+export function formatWeightKg(weightKg: number | null | undefined): string {
+  if (weightKg == null || !Number.isFinite(weightKg) || weightKg <= 0) return '—';
+  const rounded = Math.round(weightKg * 100) / 100;
+  return `${rounded.toLocaleString('en-ZA', { maximumFractionDigits: 2 })} kg`;
+}
 
 /** `-25.995, 28.123` for a captured GPS pair, or an em dash when the stop has none. */
 export function formatCoordinates(lat: number | null, lng: number | null): string {

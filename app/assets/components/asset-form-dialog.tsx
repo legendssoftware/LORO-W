@@ -12,8 +12,10 @@ import type {
   CreateAssetPayload,
   FuelType,
   UpdateAssetPayload,
+  VehicleDesignation,
   VehicleSizeClass,
 } from '@/api/types/asset';
+import { VEHICLE_DESIGNATION_LABELS } from '@/api/types/asset';
 import { getBranchDisplayLabel } from '@/api/types/branch';
 import { SearchableUserPicker } from '@/components/filters/searchable-filter-comboboxes';
 import { Button } from '@/components/ui/button';
@@ -56,6 +58,10 @@ const SIZE_OPTIONS: { value: VehicleSizeClass; label: string }[] = [
   { value: 'other', label: 'Other' },
 ];
 
+const DESIGNATION_OPTIONS: { value: VehicleDesignation; label: string }[] = (
+  Object.entries(VEHICLE_DESIGNATION_LABELS) as Array<[VehicleDesignation, string]>
+).map(([value, label]) => ({ value, label }));
+
 const assetFormSchema = z
   .object({
     category: z.enum(['IT_EQUIPMENT', 'VEHICLE', 'OFFICE', 'OTHER']),
@@ -65,10 +71,16 @@ const assetFormSchema = z
     modelNumber: z.string().min(1, 'Model is required'),
     modelYear: z.string(),
     vehicleSizeClass: z.string(),
+    vehicleDesignation: z.string(),
     fuelType: z.string(),
     ratedKmPerLitre: z.string(),
     tankCapacityLitres: z.string(),
     tonnageKg: z.string(),
+    tareWeightKg: z.string(),
+    grossVehicleMassKg: z.string(),
+    cargoVolumeM3: z.string(),
+    maxPalletCapacity: z.string(),
+    axleCount: z.string(),
     registrationPlate: z.string(),
     purchaseDate: z.string().min(1, 'Purchase date is required'),
     hasInsurance: z.boolean(),
@@ -127,10 +139,16 @@ function emptyValues(ownerUid: string, branchUid: string): AssetFormValues {
     modelNumber: '',
     modelYear: '',
     vehicleSizeClass: 'other',
+    vehicleDesignation: 'local_delivery',
     fuelType: 'petrol',
     ratedKmPerLitre: '',
     tankCapacityLitres: '',
     tonnageKg: '',
+    tareWeightKg: '',
+    grossVehicleMassKg: '',
+    cargoVolumeM3: '',
+    maxPalletCapacity: '',
+    axleCount: '',
     registrationPlate: '',
     purchaseDate: todayInput(),
     hasInsurance: true,
@@ -150,10 +168,16 @@ function assetToValues(asset: AssetRecord): AssetFormValues {
     modelNumber: asset.modelNumber ?? '',
     modelYear: asset.modelYear != null ? String(asset.modelYear) : '',
     vehicleSizeClass: asset.vehicleSizeClass ?? 'other',
+    vehicleDesignation: asset.vehicleDesignation ?? 'local_delivery',
     fuelType: asset.fuelType ?? 'petrol',
     ratedKmPerLitre: asset.ratedKmPerLitre != null ? String(asset.ratedKmPerLitre) : '',
     tankCapacityLitres: asset.tankCapacityLitres != null ? String(asset.tankCapacityLitres) : '',
     tonnageKg: asset.tonnageKg != null ? String(asset.tonnageKg) : '',
+    tareWeightKg: asset.tareWeightKg != null ? String(asset.tareWeightKg) : '',
+    grossVehicleMassKg: asset.grossVehicleMassKg != null ? String(asset.grossVehicleMassKg) : '',
+    cargoVolumeM3: asset.cargoVolumeM3 != null ? String(asset.cargoVolumeM3) : '',
+    maxPalletCapacity: asset.maxPalletCapacity != null ? String(asset.maxPalletCapacity) : '',
+    axleCount: asset.axleCount != null ? String(asset.axleCount) : '',
     registrationPlate: asset.registrationPlate?.trim() ?? '',
     purchaseDate: toDateInput(asset.purchaseDate) || todayInput(),
     hasInsurance: asset.hasInsurance ?? asset.category !== 'VEHICLE',
@@ -184,6 +208,11 @@ function toPayload(
   const modelYear = Number(values.modelYear);
   const tank = Number(values.tankCapacityLitres);
   const tonnage = Number(values.tonnageKg);
+  const tare = Number(values.tareWeightKg);
+  const gvm = Number(values.grossVehicleMassKg);
+  const volume = Number(values.cargoVolumeM3);
+  const pallets = Number(values.maxPalletCapacity);
+  const axles = Number(values.axleCount);
   const isVehicle = values.category === 'VEHICLE';
   const insuranceRequired = !isVehicle || values.hasInsurance;
   return {
@@ -202,10 +231,16 @@ function toPayload(
     ...(isVehicle
       ? {
           vehicleSizeClass: values.vehicleSizeClass as VehicleSizeClass,
+          vehicleDesignation: (values.vehicleDesignation || undefined) as VehicleDesignation | undefined,
           fuelType: values.fuelType as FuelType,
           ratedKmPerLitre: Number(values.ratedKmPerLitre),
-          tankCapacityLitres: Number.isFinite(tank) && tank >= 0 ? tank : undefined,
-          tonnageKg: Number.isFinite(tonnage) && tonnage >= 0 ? tonnage : undefined,
+          tankCapacityLitres: values.tankCapacityLitres.trim() && Number.isFinite(tank) && tank >= 0 ? tank : undefined,
+          tonnageKg: values.tonnageKg.trim() && Number.isFinite(tonnage) && tonnage >= 0 ? tonnage : undefined,
+          tareWeightKg: values.tareWeightKg.trim() && Number.isFinite(tare) && tare >= 0 ? tare : undefined,
+          grossVehicleMassKg: values.grossVehicleMassKg.trim() && Number.isFinite(gvm) && gvm >= 0 ? gvm : undefined,
+          cargoVolumeM3: values.cargoVolumeM3.trim() && Number.isFinite(volume) && volume >= 0 ? volume : undefined,
+          maxPalletCapacity: values.maxPalletCapacity.trim() && Number.isInteger(pallets) && pallets >= 0 ? pallets : undefined,
+          axleCount: values.axleCount.trim() && Number.isInteger(axles) && axles >= 1 ? axles : undefined,
           registrationPlate: values.registrationPlate.trim() || undefined,
         }
       : {}),
@@ -491,12 +526,101 @@ export function AssetFormDialog({
                   />
                   <FormField
                     control={form.control}
+                    name="vehicleDesignation"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Designation</FormLabel>
+                        <Select value={field.value} onValueChange={field.onChange}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {DESIGNATION_OPTIONS.map((option) => (
+                              <SelectItem key={option.value} value={option.value}>
+                                {option.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
                     name="tonnageKg"
                     render={({ field }) => (
                       <FormItem>
                         <FormLabel>Tonnage / payload (kg)</FormLabel>
                         <FormControl>
                           <Input inputMode="decimal" placeholder="e.g. 3500" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="tareWeightKg"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Tare weight (kg)</FormLabel>
+                        <FormControl>
+                          <Input inputMode="decimal" placeholder="Optional" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="grossVehicleMassKg"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>GVM (kg)</FormLabel>
+                        <FormControl>
+                          <Input inputMode="decimal" placeholder="Optional" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="cargoVolumeM3"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Cargo volume (m³)</FormLabel>
+                        <FormControl>
+                          <Input inputMode="decimal" placeholder="Optional" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="maxPalletCapacity"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Max pallets</FormLabel>
+                        <FormControl>
+                          <Input inputMode="numeric" placeholder="Optional" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name="axleCount"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Axles</FormLabel>
+                        <FormControl>
+                          <Input inputMode="numeric" placeholder="Optional" {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>

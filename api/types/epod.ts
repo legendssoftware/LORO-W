@@ -4,7 +4,14 @@ export const DELIVERY_STATUSES = ['assigned', 'in_progress', 'recorded', 'cancel
 
 export type DeliveryStatus = (typeof DELIVERY_STATUSES)[number];
 
-export const DELIVERY_KINDS = ['standard', 'ibt', 'bit'] as const;
+export const DELIVERY_KINDS = [
+  'branch_to_branch',
+  'branch_to_customer',
+  'hq_to_customer',
+  'branch_to_hq',
+  'customer_to_branch',
+  'customer_to_hq',
+] as const;
 
 export type DeliveryKind = (typeof DELIVERY_KINDS)[number];
 
@@ -85,6 +92,8 @@ export interface DeliveryItem {
   name: string;
   orderedQty: number;
   deliveredQty: number;
+  unitWeightKg?: number | null;
+  lineWeightKg?: number | null;
 }
 
 export interface DeliveryMedia {
@@ -149,8 +158,10 @@ export interface DeliverySummary {
   loadedChecked: boolean;
   /** GL code for China invoices that need delivery with GL. */
   glCode: string | null;
-  /** standard | ibt | bit */
+  /** Transfer type: branch_to_branch | branch_to_customer | hq_to_customer | branch_to_hq | customer_to_branch | customer_to_hq */
   deliveryKind: DeliveryKind;
+  /** Total invoice / delivery weight in kg. */
+  totalWeightKg?: number | null;
   /** True when BIT disclaimer was accepted at assign. */
   bitDisclaimerAccepted: boolean;
   /** True when customs-to-BIT was flagged at assign. */
@@ -161,11 +172,14 @@ export interface DeliverySummary {
   grvDone: boolean;
   /** True after dispatch Marks loaded (warehouse load ack). */
   routeReady: boolean;
+  /** True after dispatch accepted a planned route stop order. */
+  routePlanned?: boolean;
   /** True after the driver starts the route. */
   routeDeparted: boolean;
   /** True after the driver signed for pickup at the warehouse. */
   routePickupAcknowledged: boolean;
   routeReadyAt?: string | null;
+  routePlannedAt?: string | null;
   routePickupAcknowledgedAt?: string | null;
   routePickupSignatureUrl?: string | null;
 }
@@ -263,6 +277,8 @@ export interface AssignableOrder {
   status: string;
   clientName: string;
   itemCount: number;
+  weightKg?: number | null;
+  glCode?: string | null;
 }
 
 export interface CreateDeliveryBody {

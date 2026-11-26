@@ -12,6 +12,8 @@ import {
   XCircle,
 } from 'lucide-react';
 import { DELIVERY_STATUSES, type DriverOption } from '@/api/types/epod';
+import type { AssetRecord } from '@/api/types/asset';
+import { assetTitle } from '@/app/assets/lib/asset-display';
 import { formatDeliveryStatus } from '@/app/deliveries/format';
 import {
   SearchableOptionListPicker,
@@ -187,6 +189,10 @@ export interface DeliveriesFilterControlsProps {
   driverUid: string;
   onDriverUidChange: (value: string) => void;
   drivers: DriverOption[];
+  showTruckFilter?: boolean;
+  vehicleAssetUid?: string;
+  onVehicleAssetUidChange?: (value: string) => void;
+  trucks?: AssetRecord[];
 }
 
 export function DeliveriesFilterControls({
@@ -199,11 +205,16 @@ export function DeliveriesFilterControls({
   driverUid,
   onDriverUidChange,
   drivers,
+  showTruckFilter = false,
+  vehicleAssetUid = ANY_VALUE,
+  onVehicleAssetUidChange,
+  trucks = [],
 }: DeliveriesFilterControlsProps) {
   const { t } = useTranslation('screens');
   const row = layout === 'row';
   const chipTrigger = row ? 'h-9 min-w-0 w-[160px] shrink-0' : 'h-9 w-full min-w-0';
   const driverTrigger = row ? 'h-9 min-w-0 w-[180px] shrink-0' : 'h-9 w-full min-w-0';
+  const truckTrigger = row ? 'h-9 min-w-0 w-[200px] shrink-0' : 'h-9 w-full min-w-0';
 
   const statusOptions = React.useMemo<SearchableOptionRow[]>(
     () =>
@@ -223,6 +234,25 @@ export function DeliveriesFilterControls({
         icon: <Truck className="size-4 shrink-0" />,
       })),
     [drivers],
+  );
+
+  const truckOptions = React.useMemo<SearchableOptionRow[]>(
+    () =>
+      trucks.map((truck) => {
+        const title = assetTitle(truck);
+        const plate = truck.registrationPlate?.trim() ?? '';
+        const tonnage =
+          truck.tonnageKg != null && Number.isFinite(truck.tonnageKg)
+            ? `${truck.tonnageKg.toLocaleString('en-ZA')} kg`
+            : '';
+        return {
+          value: String(truck.uid),
+          label: [title, plate].filter(Boolean).join(' · '),
+          icon: <Truck className="size-4 shrink-0" />,
+          searchExtra: `${title} ${plate} ${tonnage} ${truck.brand ?? ''} ${truck.modelNumber ?? ''}`,
+        };
+      }),
+    [trucks],
   );
 
   return (
@@ -261,6 +291,27 @@ export function DeliveriesFilterControls({
             <FilterClearButton
               label={t('chrome.deliveries.clearDriverFilter')}
               onClick={() => onDriverUidChange(ANY_VALUE)}
+            />
+          ) : null}
+        </div>
+      ) : null}
+
+      {showTruckFilter && onVehicleAssetUidChange ? (
+        <div className={cn('flex min-w-0 items-center gap-1', !row && 'w-full')}>
+          <SearchableOptionListPicker
+            selectedValue={vehicleAssetUid}
+            onValueChange={onVehicleAssetUidChange}
+            options={truckOptions}
+            placeholderLabelWhenAll="All trucks"
+            searchPlaceholder="Search trucks…"
+            emptyMessage="No trucks found."
+            triggerIcon={<Truck className="size-4 shrink-0" />}
+            triggerClassName={truckTrigger}
+          />
+          {vehicleAssetUid !== ANY_VALUE ? (
+            <FilterClearButton
+              label="Clear truck filter"
+              onClick={() => onVehicleAssetUidChange(ANY_VALUE)}
             />
           ) : null}
         </div>

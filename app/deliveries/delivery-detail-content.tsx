@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { ExternalLink, FileText, PackageCheck, Route } from 'lucide-react';
@@ -45,8 +45,11 @@ import {
   formatDeliveryException,
   formatDeliveryStatus,
   formatDeliveryTimestamp,
+  formatDeliveryType,
+  formatWeightKg,
   loadedReadyButtonClassName,
   markLoadedButtonClassName,
+  routePlannedButtonClassName,
 } from '@/app/deliveries/format';
 import { useTranslation } from 'react-i18next';
 
@@ -80,10 +83,27 @@ export function DeliveryDetailContent({
   const [planRouteTarget, setPlanRouteTarget] = useState<PlanRouteTarget | null>(null);
 
   const delivery = query.data;
+  const pdfAutoFetchedRef = useRef<number | null>(null);
   const dayList = useDeliveries(
     delivery?.scheduledDate ? { date: delivery.scheduledDate } : {},
     isTokenReady && Boolean(delivery?.scheduledDate) && markLoadedTarget != null,
   );
+
+  // Auto-prepare the signed ePOD PDF when viewing a recorded delivery so it renders inline immediately.
+  useEffect(() => {
+    if (
+      delivery?.status === 'recorded' &&
+      !delivery.pdfUrl &&
+      !pdf.data?.url &&
+      !pdf.isPending &&
+      pdfAutoFetchedRef.current !== delivery.uid
+    ) {
+      pdfAutoFetchedRef.current = delivery.uid;
+      void pdf.mutateAsync().catch(() => {
+        // Error banner is rendered via pdf.isError.
+      });
+    }
+  }, [delivery?.uid, delivery?.status, delivery?.pdfUrl, pdf]);
 
   if (query.isLoading) {
     return (
@@ -174,7 +194,7 @@ export function DeliveryDetailContent({
               type="button"
               variant="outline"
               className={cn(markLoadedButtonClassName)}
-              aria-label="Mark loaded — warehouse load acknowledgment"
+              aria-label="Mark as Loaded — warehouse load acknowledgment"
               title="Opens the invoice load checklist, then texts the customer and driver"
               onClick={() =>
                 setMarkLoadedTarget({
@@ -185,15 +205,26 @@ export function DeliveryDetailContent({
               }
             >
               <PackageCheck className="size-4 shrink-0" aria-hidden />
-              Mark loaded
+              Mark as Loaded
             </Button>
           ) : null}
           {showPlanRoute ? (
             <Button
               type="button"
               variant="outline"
-              aria-label="Plan route — Google-optimized stop order"
-              title="Opens a proposed stop order from Google Directions"
+              className={cn(
+                delivery.routePlanned ? routePlannedButtonClassName : markLoadedButtonClassName,
+              )}
+              aria-label={
+                delivery.routePlanned
+                  ? 'Route planned — click to review or re-plan'
+                  : 'Plan route — Google-optimized stop order'
+              }
+              title={
+                delivery.routePlanned
+                  ? 'Route order has been planned and saved. Click to review or re-plan.'
+                  : 'Opens a proposed stop order from Google Directions'
+              }
               onClick={() =>
                 setPlanRouteTarget({
                   driverUid: delivery.driverUid,
@@ -203,7 +234,7 @@ export function DeliveryDetailContent({
               }
             >
               <Route className="size-4 shrink-0" aria-hidden />
-              Plan route
+              {delivery.routePlanned ? 'Route planned' : 'Plan route'}
             </Button>
           ) : null}
           {onClose ? (
@@ -245,29 +276,9 @@ export function DeliveryDetailContent({
               }
             />
             <DetailRow label="Driver" value={delivery.driverName?.trim() || '—'} />
-            <DetailRow
-              label="Delivery kind"
-              value={
-                delivery.deliveryKind === 'ibt'
-                  ? 'IBT'
-                  : delivery.deliveryKind === 'bit'
-                    ? 'BIT'
-                    : 'Standard'
-              }
-            />
+            <DetailRow label="Delivery type" value={formatDeliveryType(delivery.deliveryKind)} />
+            <DetailRow label="Invoice weight" value={formatWeightKg(delivery.totalWeightKg)} />
             <DetailRow label="GL code" value={delivery.glCode?.trim() || '—'} />
-            {delivery.deliveryKind === 'bit' ? (
-              <>
-                <DetailRow
-                  label="BIT disclaimer"
-                  value={delivery.bitDisclaimerAccepted ? 'Accepted' : 'Not accepted'}
-                />
-                <DetailRow
-                  label="Customs to BIT"
-                  value={delivery.customsToBit ? 'Yes' : 'No'}
-                />
-              </>
-            ) : null}
             <DetailRow label="Client location" value={formatCoordinates(delivery.latitude, delivery.longitude)} />
           </CardContent>
         </Card>
@@ -279,7 +290,13 @@ export function DeliveryDetailContent({
           <CardContent className="flex flex-col gap-2">
             <DetailRow
               label="Loaded"
-              value={delivery.routeReady ? 'Loaded (dispatch ready)' : 'Not loaded'}
+              value={
+                delivery.routeReady
+                  ? delivery.routeReadyAt
+                    ? `Loaded · ${formatDeliveryTimestamp(delivery.routeReadyAt)}`
+                    : 'Loaded (dispatch ready)'
+                  : 'Not loaded'
+              }
             />
             <DetailRow
               label="Credit note passed"
@@ -347,6 +364,7 @@ export function DeliveryDetailContent({
                   <TableHead>{t('tables.item')}</TableHead>
                   <TableHead className="text-right">{t('tables.ordered')}</TableHead>
                   <TableHead className="text-right">{t('tables.delivered')}</TableHead>
+                  <TableHead className="text-right">Weight</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -360,6 +378,9 @@ export function DeliveryDetailContent({
                         <span className="text-destructive ml-2 text-xs">Short</span>
                       ) : null}
                     </TableCell>
+                    <TableCell className="text-right text-muted-foreground">
+                      {formatWeightKg(item.lineWeightKg)}
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -369,49 +390,64 @@ export function DeliveryDetailContent({
       </Card>
 
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between gap-2">
           <CardTitle className="text-base">Proof of delivery</CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-col gap-4">
-          <div className="border-border flex flex-col items-center gap-2 rounded-md border p-6 text-center">
-            <FileText className="text-violet-500" size={40} strokeWidth={1.5} />
-            <p className="text-sm">{delivery.deliveryNumber}.pdf</p>
-            <p className="text-muted-foreground text-xs">
-              {delivery.receiverName
-                ? `Signed by ${delivery.receiverName}${delivery.receiverCompany ? `, ${delivery.receiverCompany}` : ''}`
-                : 'Signed proof of delivery'}
-            </p>
-          </div>
-
-          {delivery.status !== 'recorded' ? (
-            <p className="rounded-md border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-900 dark:text-amber-200">
-              The ePOD document is available once the driver records this delivery.
-            </p>
-          ) : pdf.isPending ? (
-            <p className="text-muted-foreground text-sm">Preparing the document…</p>
-          ) : pdf.isError && !pdfUrl ? (
-            <p className="text-destructive text-sm">{getQueryErrorMessage(pdf.error)}</p>
-          ) : null}
-
           {pdfUrl ? (
-            <Button asChild className="bg-violet-600 text-white hover:bg-violet-700">
+            <Button asChild size="sm" variant="outline">
               <a href={pdfUrl} target="_blank" rel="noopener noreferrer">
-                <ExternalLink className="size-4" />
-                Open document
+                <ExternalLink className="size-3.5" />
+                Open in new tab
               </a>
             </Button>
-          ) : delivery.status === 'recorded' ? (
-            <Button
-              type="button"
-              className="bg-violet-600 text-white hover:bg-violet-700"
-              disabled={pdf.isPending}
-              onClick={() => void pdf.mutateAsync()}
-              aria-label="Open the ePOD document"
-            >
-              <ExternalLink className="size-4" />
-              {pdf.isPending ? 'Preparing…' : 'Open document'}
-            </Button>
           ) : null}
+        </CardHeader>
+        <CardContent className="flex flex-col gap-4">
+          {delivery.status !== 'recorded' ? (
+            <>
+              <div className="border-border flex flex-col items-center gap-2 rounded-md border p-6 text-center">
+                <FileText className="text-violet-500" size={40} strokeWidth={1.5} />
+                <p className="text-sm">{delivery.deliveryNumber}.pdf</p>
+                <p className="text-muted-foreground text-xs">Signed proof of delivery</p>
+              </div>
+              <p className="rounded-md border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-900 dark:text-amber-200">
+                The ePOD document is available once the driver records this delivery.
+              </p>
+            </>
+          ) : pdfUrl ? (
+            <div className="flex flex-col gap-2">
+              <p className="text-muted-foreground text-xs">
+                {delivery.deliveryNumber}.pdf
+                {delivery.receiverName
+                  ? ` · Signed by ${delivery.receiverName}${delivery.receiverCompany ? `, ${delivery.receiverCompany}` : ''}`
+                  : ''}
+              </p>
+              <iframe
+                title={`${delivery.deliveryNumber}.pdf`}
+                src={`${pdfUrl}#toolbar=1&navpanes=0`}
+                className="border-border h-[60vh] w-full rounded-md border bg-white"
+              />
+            </div>
+          ) : pdf.isPending ? (
+            <div className="border-border flex h-48 items-center justify-center rounded-md border">
+              <LoadingSpinner />
+            </div>
+          ) : (
+            <div className="flex flex-col items-start gap-3">
+              {pdf.isError ? (
+                <p className="text-destructive text-sm">{getQueryErrorMessage(pdf.error)}</p>
+              ) : null}
+              <Button
+                type="button"
+                className="bg-violet-600 text-white hover:bg-violet-700"
+                disabled={pdf.isPending}
+                onClick={() => void pdf.mutateAsync()}
+                aria-label="Load the ePOD document"
+              >
+                <FileText className="size-4" />
+                Load ePOD PDF
+              </Button>
+            </div>
+          )}
         </CardContent>
       </Card>
 

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { PackageCheck, PackagePlus, Route } from 'lucide-react';
 import {
   filterDeliveries,
+  useAssetsInfinite,
   useDeliveries,
   useDeliveryDrivers,
   useSessionSync,
@@ -40,8 +41,11 @@ import {
   deliveryStatusClassName,
   formatArrivalWindow,
   formatDeliveryStatus,
+  formatDeliveryTimestamp,
+  formatWeightKg,
   loadedReadyButtonClassName,
   markLoadedButtonClassName,
+  routePlannedButtonClassName,
 } from '@/app/deliveries/format';
 import {
   VisitsListPagination,
@@ -78,6 +82,7 @@ export function DeliveriesListContent() {
   const [date, setDate] = useState<string | null>(null);
   const [status, setStatus] = useState<string>(ANY_VALUE);
   const [driverUid, setDriverUid] = useState<string>(ANY_VALUE);
+  const [vehicleAssetUid, setVehicleAssetUid] = useState<string>(ANY_VALUE);
   const [search, setSearch] = useState('');
   const [assignOpen, setAssignOpen] = useState(false);
   const [selectedUid, setSelectedUid] = useState<number | null>(null);
@@ -95,11 +100,27 @@ export function DeliveriesListContent() {
     isTokenReady,
   );
   const driversQuery = useDeliveryDrivers(isTokenReady && canViewOrganisation);
+  const trucksQuery = useAssetsInfinite({
+    scope: 'org',
+    category: 'VEHICLE',
+    enabled: isTokenReady && canViewOrganisation,
+  });
+  const trucks = trucksQuery.data ?? [];
 
-  const rows = useMemo(
-    () => filterDeliveries(query.data?.deliveries ?? [], search),
-    [query.data?.deliveries, search],
-  );
+  const rows = useMemo(() => {
+    const searched = filterDeliveries(query.data?.deliveries ?? [], search);
+    if (vehicleAssetUid === ANY_VALUE) return searched;
+    const selectedTruckUid = Number(vehicleAssetUid);
+    const selectedTruck = trucks.find((truck) => truck.uid === selectedTruckUid);
+    const selectedPlate = selectedTruck?.registrationPlate?.trim().toLowerCase() ?? '';
+    return searched.filter((row) => {
+      if (row.vehicleAssetUid != null) return row.vehicleAssetUid === selectedTruckUid;
+      if (selectedPlate && row.truckRegistration?.trim()) {
+        return row.truckRegistration.trim().toLowerCase().includes(selectedPlate);
+      }
+      return false;
+    });
+  }, [query.data?.deliveries, search, vehicleAssetUid, trucks]);
   const hasSearch = search.trim().length > 0;
   const total = rows.length;
   const totalPages = total === 0 ? 0 : Math.ceil(total / pageSize);
@@ -110,7 +131,7 @@ export function DeliveriesListContent() {
 
   useEffect(() => {
     setPage(1);
-  }, [date, status, driverUid, pageSize, search]);
+  }, [date, status, driverUid, vehicleAssetUid, pageSize, search]);
 
   useEffect(() => {
     if (totalPages > 0 && page > totalPages) setPage(totalPages);
@@ -173,6 +194,10 @@ export function DeliveriesListContent() {
         driverUid={driverUid}
         onDriverUidChange={setDriverUid}
         drivers={driversQuery.data ?? []}
+        showTruckFilter={canViewOrganisation}
+        vehicleAssetUid={vehicleAssetUid}
+        onVehicleAssetUidChange={setVehicleAssetUid}
+        trucks={trucks}
         actions={
           canDispatch ? (
             <Button
@@ -220,8 +245,8 @@ export function DeliveriesListContent() {
                   <TableHead>Arrival</TableHead>
                   <TableHead>{t('tables.status')}</TableHead>
                   <TableHead>{t('tables.rating')}</TableHead>
-                  <TableHead>{t('tables.items')}</TableHead>
-                  {canDispatch ? <TableHead>Loaded</TableHead> : null}
+                  <TableHead>Weight</TableHead>
+                  {canDispatch ? <TableHead>Loading Status</TableHead> : null}
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -273,28 +298,41 @@ export function DeliveriesListContent() {
                       </Badge>
                     </TableCell>
                     <TableCell>{row.ratingScore == null ? '—' : `${row.ratingScore}/5`}</TableCell>
-                    <TableCell className="text-muted-foreground text-sm">{row.itemSummary || '—'}</TableCell>
+                    <TableCell className="text-muted-foreground text-sm whitespace-nowrap">
+                      {formatWeightKg(row.totalWeightKg)}
+                    </TableCell>
                     {canDispatch ? (
                       <TableCell>
-                        <div className="flex flex-wrap items-center gap-2">
+                        <div className="flex flex-wrap items-start gap-2">
                           {row.routeReady ? (
-                            <Button
-                              type="button"
-                              variant="outline"
-                              className={cn('h-9', loadedReadyButtonClassName)}
-                              disabled
-                              aria-label="Loaded — warehouse load already acknowledged"
-                              title="Warehouse load is marked loaded and ready"
-                            >
-                              <PackageCheck className="size-4 shrink-0" aria-hidden />
-                              Loaded
-                            </Button>
+                            <div className="flex flex-col gap-0.5">
+                              <Button
+                                type="button"
+                                variant="outline"
+                                className={cn('h-9', loadedReadyButtonClassName)}
+                                disabled
+                                aria-label="Loaded — warehouse load already acknowledged"
+                                title={
+                                  row.routeReadyAt
+                                    ? `Loaded at ${formatDeliveryTimestamp(row.routeReadyAt)}`
+                                    : 'Warehouse load is marked loaded and ready'
+                                }
+                              >
+                                <PackageCheck className="size-4 shrink-0" aria-hidden />
+                                Loaded
+                              </Button>
+                              {row.routeReadyAt ? (
+                                <span className="text-muted-foreground text-[11px] leading-tight">
+                                  {formatDeliveryTimestamp(row.routeReadyAt)}
+                                </span>
+                              ) : null}
+                            </div>
                           ) : canMarkDeliveryReady(row) ? (
                             <Button
                               type="button"
                               variant="outline"
                               className={cn('h-9', markLoadedButtonClassName)}
-                              aria-label="Mark loaded — warehouse load acknowledgment"
+                              aria-label="Mark as Loaded — warehouse load acknowledgment"
                               title="Opens the invoice load checklist, then texts the customer and driver"
                               onClick={(event) => {
                                 event.stopPropagation();
@@ -306,16 +344,29 @@ export function DeliveriesListContent() {
                               }}
                             >
                               <PackageCheck className="size-4 shrink-0" aria-hidden />
-                              Mark loaded
+                              Mark as Loaded
                             </Button>
                           ) : null}
                           {canPlanRoute(row) ? (
                             <Button
                               type="button"
                               variant="outline"
-                              className="h-9"
-                              aria-label="Plan route — Google-optimized stop order"
-                              title="Opens a proposed stop order from Google Directions"
+                              className={cn(
+                                'h-9',
+                                row.routePlanned
+                                  ? routePlannedButtonClassName
+                                  : markLoadedButtonClassName,
+                              )}
+                              aria-label={
+                                row.routePlanned
+                                  ? 'Route planned — click to review or re-plan'
+                                  : 'Plan route — Google-optimized stop order'
+                              }
+                              title={
+                                row.routePlanned
+                                  ? 'Route order has been planned and saved. Click to review or re-plan.'
+                                  : 'Opens a proposed stop order from Google Directions'
+                              }
                               onClick={(event) => {
                                 event.stopPropagation();
                                 setPlanRouteTarget({
@@ -326,7 +377,7 @@ export function DeliveriesListContent() {
                               }}
                             >
                               <Route className="size-4 shrink-0" aria-hidden />
-                              Plan route
+                              {row.routePlanned ? 'Route planned' : 'Plan route'}
                             </Button>
                           ) : !row.routeReady && !canMarkDeliveryReady(row) ? (
                             '—'

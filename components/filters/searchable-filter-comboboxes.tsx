@@ -599,7 +599,7 @@ export function SearchableOptionListPicker({
           disabled={disabled}
           className={cn(
             reportsFilterSelectTriggerClass,
-            'justify-between font-normal gap-2',
+            'min-w-0 max-w-full overflow-hidden justify-between font-normal gap-2',
             compactTriggerOnMobile &&
               'h-9 w-9 shrink-0 justify-center px-0 sm:w-9 md:h-9 md:justify-between md:px-3',
             compactTriggerOnMobile &&

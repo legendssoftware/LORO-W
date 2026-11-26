@@ -152,7 +152,7 @@ export function MarkLoadedDialog({ open, onOpenChange, target, deliveries }: Mar
         <DialogContent className={DETAIL_DIALOG_CONTENT_CLASS} showCloseButton={false}>
           <DetailDialogCloseButton />
           <DialogHeader>
-            <DialogTitle>Mark loaded</DialogTitle>
+            <DialogTitle>Mark as Loaded</DialogTitle>
             <DialogDescription>
               Check each invoice on route {target?.routeCode ?? '—'} for{' '}
               {target?.scheduledDate ?? '—'} before confirming the warehouse load. Confirm credit

@@ -56,7 +56,8 @@ export function CancelDeliveryForm({ isPending, onCancel }: CancelDeliveryFormPr
     return (
       <Button
         type="button"
-        variant="outline"
+        variant="destructive"
+        className="bg-red-600 text-white hover:bg-red-700 dark:bg-red-600 dark:text-white dark:hover:bg-red-700"
         disabled={isPending}
         onClick={() => setOpen(true)}
         aria-label="Cancel this delivery"
