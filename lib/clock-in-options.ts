@@ -111,6 +111,16 @@ export function canClockInOffsite(
   return OFFSITE_ACCESS_LEVELS.has(level) || OFFSITE_WORKFORCE_TYPES.has(workforce);
 }
 
+/**
+ * True for desktop-class browsers (including laptops, which a user agent cannot tell apart).
+ * Phones and tablets are false. Only a UI hint for the no-GPS fallback; the server decides.
+ */
+export function isDesktopBrowser(userAgent: string | null | undefined): boolean {
+  const ua = userAgent?.toLowerCase() ?? '';
+  if (!ua) return false;
+  return !/(android|iphone|ipad|ipod|mobile|tablet|kindle|silk|windows phone|blackberry)/.test(ua);
+}
+
 /** User is outside the office radius and not allowed to work remotely: hide buttons, show message. */
 export function isOffsiteBlockedContext(
   ctx: { offsiteClockInBlocked?: boolean } | null | undefined,
