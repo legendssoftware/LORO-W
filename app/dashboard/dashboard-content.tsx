@@ -30,6 +30,7 @@ import type { ReportCardUser } from '@/lib/types/staff-report-types';
 import { debugApi, isApiDebugEnabled } from '@/lib/api-debug';
 import {
   canClockInOffsite,
+  isDesktopBrowser,
   locationContextFailureMessageKey,
   OFFSITE_NOT_ALLOWED_CODE,
   OFFSITE_NOT_ALLOWED_MESSAGE_KEY,
@@ -57,6 +58,11 @@ export function DashboardContent() {
   const [attendanceMonth, setAttendanceMonth] = useState(() => new Date().getMonth() + 1);
   const didSyncAttendancePeriod = useRef(false);
   const [clockInContext, setClockInContext] = useState<AttCheckInContext | null>(null);
+  // Office desktops are exempt from the offsite rule; resolved after mount to stay SSR-safe.
+  const [isDesktopClient, setIsDesktopClient] = useState(false);
+  useEffect(() => {
+    setIsDesktopClient(isDesktopBrowser(navigator.userAgent));
+  }, []);
   const [clockInContextLoading, setClockInContextLoading] = useState(false);
   /** i18n key (`screens` namespace) for the location failure, translated by AttendanceStatusButton. */
   const [clockInContextError, setClockInContextError] = useState<string | null>(null);
@@ -408,7 +414,7 @@ export function DashboardContent() {
               clockInContextLoading={clockInContextLoading}
               clockInContextError={clockInContextError}
               onRetryClockInContext={() => void refreshClockInContext()}
-              allowFallbackRemoteOptions={canClockInOffsite(profile)}
+              allowFallbackRemoteOptions={isDesktopClient || canClockInOffsite(profile)}
               onCheckOut={handleCheckOut}
               onStartBreak={handleStartBreak}
               onEndBreak={handleEndBreak}
