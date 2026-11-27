@@ -543,17 +543,6 @@ export function UserAttendanceRecordsModal({
           >
             <ChevronRight />
           </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            className="ml-auto"
-            disabled={isLoading || !hasExportableRows}
-            onClick={handleExportExcel}
-          >
-            <Download aria-hidden />
-            {t('chrome.staff.attendance.exportExcel')}
-          </Button>
         </div>
 
         <div className="flex-1 min-h-0 overflow-y-auto -mx-1 px-1 max-h-[60vh]">
@@ -744,23 +733,36 @@ export function UserAttendanceRecordsModal({
         </div>
 
         {!isLoading && records.length > 0 && (
-          <div className="shrink-0 border-t border-border py-3 px-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-base">
-            <span>
-              <span className="font-medium text-destructive">{t('chrome.staff.attendance.summaryMissed')}:</span>{' '}
-              <span className="tabular-nums font-semibold text-destructive">{summary.missed}</span>
-            </span>
-            <span>
-              <span className="font-medium text-green-600 dark:text-green-500">{t('chrome.staff.attendance.summaryAttended')}:</span>{' '}
-              <span className="tabular-nums font-semibold text-green-600 dark:text-green-500">{summary.attended}</span>
-            </span>
-            <span>
-              <span className="font-medium text-muted-foreground">{t('chrome.staff.attendance.summaryRemaining')}:</span>{' '}
-              <span className="tabular-nums font-semibold text-muted-foreground">{summary.remaining}</span>
-            </span>
-            <span>
-              <span className="font-medium text-destructive">{t('chrome.staff.attendance.summaryForgottenOuts')}:</span>{' '}
-              <span className="tabular-nums font-semibold text-destructive">{summary.forgottenOuts}</span>
-            </span>
+          <div className="shrink-0 border-t border-border py-3 px-3 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 text-base">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
+              <span>
+                <span className="font-medium text-destructive">{t('chrome.staff.attendance.summaryMissed')}:</span>{' '}
+                <span className="tabular-nums font-semibold text-destructive">{summary.missed}</span>
+              </span>
+              <span>
+                <span className="font-medium text-green-600 dark:text-green-500">{t('chrome.staff.attendance.summaryAttended')}:</span>{' '}
+                <span className="tabular-nums font-semibold text-green-600 dark:text-green-500">{summary.attended}</span>
+              </span>
+              <span>
+                <span className="font-medium text-muted-foreground">{t('chrome.staff.attendance.summaryRemaining')}:</span>{' '}
+                <span className="tabular-nums font-semibold text-muted-foreground">{summary.remaining}</span>
+              </span>
+              <span>
+                <span className="font-medium text-destructive">{t('chrome.staff.attendance.summaryForgottenOuts')}:</span>{' '}
+                <span className="tabular-nums font-semibold text-destructive">{summary.forgottenOuts}</span>
+              </span>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              className="shrink-0"
+              disabled={!hasExportableRows}
+              onClick={handleExportExcel}
+            >
+              <Download aria-hidden />
+              {t('chrome.staff.attendance.exportExcel')}
+            </Button>
           </div>
         )}
       </DialogContent>

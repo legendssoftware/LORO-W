@@ -34,10 +34,13 @@ export interface CartLine extends StoreProduct {
 
 interface ClientCartState {
   items: CartLine[];
+  openRequested: boolean;
   addItem: (product: StoreProduct, quantity?: number, mode?: PurchaseMode) => void;
   updateQuantity: (uid: number, mode: PurchaseMode, quantity: number) => void;
   removeItem: (uid: number, mode: PurchaseMode) => void;
   findCartItem: (uid: number, mode?: PurchaseMode) => CartLine | undefined;
+  loadLines: (lines: CartLine[]) => void;
+  acknowledgeOpen: () => void;
   clear: () => void;
   cartTotal: () => number;
   itemCount: () => number;
@@ -79,6 +82,7 @@ export const useClientCartStore = create<ClientCartState>()(
   persist(
     (set, get) => ({
       items: [],
+      openRequested: false,
       addItem: (product, quantity = 1, mode = 'item') => {
         const { unitPrice, itemsPerUnit } = calcPricing(product, mode);
         const key = `${product.uid}-${mode}`;
@@ -139,6 +143,8 @@ export const useClientCartStore = create<ClientCartState>()(
         get().items.find(
           (i) => i.uid === uid && i.purchaseMode === mode
         ),
+      loadLines: (lines) => set({ items: lines, openRequested: true }),
+      acknowledgeOpen: () => set({ openRequested: false }),
       clear: () => set({ items: [] }),
       cartTotal: () =>
         Number(
@@ -148,7 +154,10 @@ export const useClientCartStore = create<ClientCartState>()(
         ),
       itemCount: () => get().items.reduce((s, i) => s + i.quantity, 0),
     }),
-    { name: 'loro-client-cart' }
+    {
+      name: 'loro-client-cart',
+      partialize: (state) => ({ items: state.items }),
+    }
   )
 );
 

@@ -196,16 +196,16 @@ export function WellbeingContent() {
             <TabsTrigger value="today" className={tabTriggerClass}>
               <LayoutDashboard className="size-4" /> {t('chrome.wellbeing.tabs.today')}
             </TabsTrigger>
-            <TabsTrigger value="insights" className={tabTriggerClass}>
+            <TabsTrigger value="insights" className={tabTriggerClass} data-tour="wellbeing-tab-insights">
               <Sparkles className="size-4" /> {t('chrome.wellbeing.tabs.insights')}
             </TabsTrigger>
             <TabsTrigger value="executive" className={tabTriggerClass} data-tour="wellbeing-tab-executive">
               <HeartPulse className="size-4" /> {t('chrome.wellbeing.tabs.executive')}
             </TabsTrigger>
-            <TabsTrigger value="correlations" className={tabTriggerClass}>
+            <TabsTrigger value="correlations" className={tabTriggerClass} data-tour="wellbeing-tab-correlations">
               <TrendingUp className="size-4" /> {t('chrome.wellbeing.tabs.correlations')}
             </TabsTrigger>
-            <TabsTrigger value="admin" className={tabTriggerClass}>
+            <TabsTrigger value="admin" className={tabTriggerClass} data-tour="wellbeing-tab-admin">
               <ClipboardCheck className="size-4" /> {t('chrome.wellbeing.tabs.admin')}
             </TabsTrigger>
           </TabsList>
@@ -280,7 +280,7 @@ export function WellbeingContent() {
               </>
             )}
           </TabsContent>
-          <TabsContent value="insights" className="space-y-4">
+          <TabsContent value="insights" className="space-y-4" data-tour="wellbeing-insights">
             {insights.isLoading ? (
               <Skeleton className="h-40 w-full" />
             ) : (
@@ -332,7 +332,7 @@ export function WellbeingContent() {
               </div>
             )}
           </TabsContent>
-          <TabsContent value="correlations" className="space-y-3">
+          <TabsContent value="correlations" className="space-y-3" data-tour="wellbeing-correlations">
             <p className="text-xs text-muted-foreground">
               {t('chrome.wellbeing.correlationsHint')}
             </p>

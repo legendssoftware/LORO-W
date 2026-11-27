@@ -100,7 +100,7 @@ function featureTour(
     optional: true,
   });
 
-  return defineTour(path, `loro-page-tour-${tourId}-v1`, steps, {
+  return defineTour(path, `loro-page-tour-${tourId}-v2`, steps, {
     required: [`${tourId}-page-header`],
     settled: [`${tourId}-content`, `${tourId}-settled`],
   });
@@ -121,7 +121,7 @@ const PAGE_TOURS: Record<string, PageTourConfig> = {
   '/loyalty': featureTour('/loyalty', 'loyalty'),
   '/claims': defineTour(
     '/claims',
-    'loro-page-tour-claims-v1',
+    'loro-page-tour-claims-v2',
     [
       {
         anchor: 'claims-page-header',
@@ -157,7 +157,7 @@ const PAGE_TOURS: Record<string, PageTourConfig> = {
   ),
   '/iot': defineTour(
     '/iot',
-    'loro-page-tour-iot-v1',
+    'loro-page-tour-iot-v2',
     [
       {
         anchor: 'iot-page-header',
@@ -192,7 +192,7 @@ const PAGE_TOURS: Record<string, PageTourConfig> = {
   ),
   '/approvals': defineTour(
     '/approvals',
-    'loro-page-tour-approvals-v1',
+    'loro-page-tour-approvals-v2',
     [
       {
         anchor: 'approvals-page-header',
@@ -223,7 +223,7 @@ const PAGE_TOURS: Record<string, PageTourConfig> = {
   ),
   '/payslips': defineTour(
     '/payslips',
-    'loro-page-tour-payslips-v1',
+    'loro-page-tour-payslips-v2',
     [
       {
         anchor: 'payslips-page-header',
@@ -231,14 +231,6 @@ const PAGE_TOURS: Record<string, PageTourConfig> = {
         descriptionKey: 'tours.payslips.header.description',
         side: 'bottom',
         align: 'start',
-      },
-      {
-        anchor: 'payslips-import',
-        titleKey: 'tours.payslips.import.title',
-        descriptionKey: 'tours.payslips.import.description',
-        side: 'bottom',
-        align: 'center',
-        optional: true,
       },
       {
         anchor: 'payslips-filters',
@@ -259,7 +251,7 @@ const PAGE_TOURS: Record<string, PageTourConfig> = {
   ),
   '/competitors': defineTour(
     '/competitors',
-    'loro-page-tour-competitors-v1',
+    'loro-page-tour-competitors-v2',
     [
       {
         anchor: 'competitors-page-header',
@@ -295,7 +287,7 @@ const PAGE_TOURS: Record<string, PageTourConfig> = {
   ),
   '/takeoff': defineTour(
     '/takeoff',
-    'loro-page-tour-takeoff-v1',
+    'loro-page-tour-takeoff-v2',
     [
       {
         anchor: 'takeoff-page-header',
@@ -323,7 +315,7 @@ const PAGE_TOURS: Record<string, PageTourConfig> = {
   ),
   '/deliveries': defineTour(
     '/deliveries',
-    'loro-page-tour-deliveries-v1',
+    'loro-page-tour-deliveries-v2',
     [
       {
         anchor: 'deliveries-page-header',
@@ -359,7 +351,7 @@ const PAGE_TOURS: Record<string, PageTourConfig> = {
   ),
   '/store-operations': defineTour(
     '/store-operations',
-    'loro-page-tour-store-operations-v1',
+    'loro-page-tour-store-operations-v2',
     [
       {
         anchor: 'store-operations-page-header',
@@ -406,7 +398,7 @@ const PAGE_TOURS: Record<string, PageTourConfig> = {
   ),
   '/store': defineTour(
     '/store',
-    'loro-page-tour-store-v1',
+    'loro-page-tour-store-v2',
     [
       {
         anchor: 'store-page-header',
@@ -434,7 +426,7 @@ const PAGE_TOURS: Record<string, PageTourConfig> = {
   ),
   '/orders': defineTour(
     '/orders',
-    'loro-page-tour-orders-v1',
+    'loro-page-tour-orders-v2',
     [
       {
         anchor: 'orders-page-header',
@@ -465,7 +457,7 @@ const PAGE_TOURS: Record<string, PageTourConfig> = {
   ),
   '/projects': defineTour(
     '/projects',
-    'loro-page-tour-projects-v1',
+    'loro-page-tour-projects-v2',
     [
       {
         anchor: 'projects-page-header',
@@ -500,7 +492,7 @@ const PAGE_TOURS: Record<string, PageTourConfig> = {
   ),
   '/account': defineTour(
     '/account',
-    'loro-page-tour-account-v1',
+    'loro-page-tour-account-v2',
     [
       {
         anchor: 'account-page-header',

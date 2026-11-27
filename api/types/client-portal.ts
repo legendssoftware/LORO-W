@@ -138,6 +138,8 @@ export interface ClientQuotation {
   promoCode?: string;
   notes?: string;
   pdfURL?: string;
+  deliveryMethod?: string;
+  deliveryAddress?: string;
   client?: { name?: string; email?: string; phone?: string; uid?: number };
   placedBy?: { name?: string; surname?: string; email?: string; uid?: number };
   branch?: { uid?: number; name?: string; alias?: string | null };

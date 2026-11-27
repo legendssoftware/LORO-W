@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import { useAuth } from '@clerk/nextjs';
 import { usePathname } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
+import { tourButtonLabels } from '@/lib/use-monthly-page-tour';
 import type { TFunction } from 'i18next';
 import { driver, type DriveStep, type Driver } from 'driver.js';
 import 'driver.js/dist/driver.css';
@@ -15,7 +16,6 @@ import {
 import { persistAfterDriverDestroyed } from '@/lib/tour-monthly-persist';
 import { scheduleTourWhenReady } from '@/lib/schedule-tour-when-ready';
 import { usePerformanceWarningPendingSafe } from '@/contexts/performance-warning-pending-context';
-import { ROUTE_PLANNING_NOTE, ROUTE_PLANNING_NOTE_TITLE } from '@/lib/route-planning-note';
 
 const DRIVER_TOUR_POPOVER_CLASS = 'loro-driver-tour';
 
@@ -73,8 +73,8 @@ function buildTourSteps(t: TFunction): DriveStep[] {
     {
       element: SEL_ROUTE_NOTE,
       popover: {
-        title: ROUTE_PLANNING_NOTE_TITLE,
-        description: ROUTE_PLANNING_NOTE,
+        title: t('pages.planning.routeTitle'),
+        description: t('pages.planning.routeNote'),
         side: 'bottom',
         align: 'start',
       },
@@ -152,6 +152,7 @@ function areTourTargetsReady(): boolean {
 
 export function PlanningTour() {
   const { t } = useTranslation('screens');
+  const { t: tCommon } = useTranslation('common');
   const pathname = usePathname();
   const { isLoaded, isSignedIn, userId } = useAuth();
   const blockTours = usePerformanceWarningPendingSafe().deferToursAndSalesBenchmarks;
@@ -228,9 +229,7 @@ export function PlanningTour() {
           smoothScroll: true,
           allowClose: true,
           popoverClass: DRIVER_TOUR_POPOVER_CLASS,
-          nextBtnText: 'Next',
-          prevBtnText: 'Previous',
-          doneBtnText: 'Done',
+          ...tourButtonLabels(tCommon),
           steps,
           onHighlighted: (_element, _step, { driver: activeDriver }) => {
             const stepElement = activeStepElement(activeDriver);

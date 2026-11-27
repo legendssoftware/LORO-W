@@ -10,6 +10,7 @@ import { getProducts } from '@/api/endpoints/products';
 import type { ClientProfileData } from '@/api/types/client-portal';
 import { ProductCard } from '@/app/client-portal/components/product-card';
 import { StoreCartSheet } from '@/app/store/components/store-cart-sheet';
+import { StoreOrdersStrip } from '@/app/store/components/store-orders-strip';
 import { StoreFiltersBar } from '@/app/store/components/store-filters-bar';
 import type { SearchableOptionRow } from '@/components/filters/searchable-filter-comboboxes';
 import { LoadingSpinner } from '@/components/loading-spinner';
@@ -52,6 +53,7 @@ export function StoreContent({ client }: { client: ClientProfileData }) {
 
   return (
     <div className="space-y-6">
+      <StoreOrdersStrip client={client} />
       <StoreFiltersBar
         searchInput={searchInput}
         onSearchChange={setSearchInput}

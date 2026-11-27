@@ -2,15 +2,12 @@
 
 import { useTranslation } from 'react-i18next';
 
-import { useMemo, useState, type ReactNode } from 'react';
+import { useMemo, type ReactNode } from 'react';
+import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { ExternalLink, FileText, ShoppingBag } from 'lucide-react';
-import type {
-  ClientProfileData,
-  ClientProject,
-  ClientQuotation,
-} from '@/api/types/client-portal';
+import type { ClientProfileData, ClientProject } from '@/api/types/client-portal';
 import { getMyClientProject } from '@/api/endpoints/client-portal';
 import { useApiClient } from '@/api/hooks/use-api-client';
 import {
@@ -35,7 +32,6 @@ import {
 import { DialogCloseButton } from '@/components/dialog-close-button';
 import { Badge } from '@/components/ui/badge';
 import { LoadingSpinner } from '@/components/loading-spinner';
-import { QuotationDetailDialog } from './quotation-detail-dialog';
 
 function formatDate(value?: string): string | null {
   if (!value) return null;
@@ -58,18 +54,17 @@ function LinkedRecordButton({
   subtitle,
   amount,
   status,
-  onClick,
+  href,
 }: {
   title: string;
   subtitle?: string;
   amount?: string;
   status?: string;
-  onClick: () => void;
+  href: string;
 }) {
   return (
-    <button
-      type="button"
-      onClick={onClick}
+    <Link
+      href={href}
       className="w-full flex items-center justify-between gap-3 rounded-lg border p-3 text-left hover:bg-muted/50 transition-colors"
     >
       <div className="min-w-0 flex-1">
@@ -86,7 +81,7 @@ function LinkedRecordButton({
           </Badge>
         )}
       </div>
-    </button>
+    </Link>
   );
 }
 
@@ -103,8 +98,6 @@ export function ProjectDetailDialog({
 }) {
   const { t } = useTranslation('portal');
   const apiClient = useApiClient();
-  const [selectedQuotation, setSelectedQuotation] =
-    useState<ClientQuotation | null>(null);
 
   const projectId = project?.uid;
 
@@ -134,7 +127,6 @@ export function ProjectDetailDialog({
     : null;
 
   return (
-    <>
       <Dialog open={open} onOpenChange={onOpenChange}>
         <DialogContent
           showCloseButton={false}
@@ -363,7 +355,7 @@ export function ProjectDetailDialog({
                         subtitle={formatDate(q.createdAt) ?? undefined}
                         amount={formatZar(parseQuotationAmount(q.totalAmount))}
                         status={q.status}
-                        onClick={() => setSelectedQuotation(q)}
+                        href={`/orders/${q.uid}`}
                       />
                     ))}
                   </div>
@@ -395,7 +387,7 @@ export function ProjectDetailDialog({
                         }
                         amount={formatZar(parseQuotationAmount(q.totalAmount))}
                         status={q.status}
-                        onClick={() => setSelectedQuotation(q)}
+                        href={`/orders/${q.uid}`}
                       />
                     ))}
                   </div>
@@ -405,13 +397,5 @@ export function ProjectDetailDialog({
           )}
         </DialogContent>
       </Dialog>
-
-      <QuotationDetailDialog
-        quotation={selectedQuotation}
-        client={client}
-        open={selectedQuotation != null}
-        onOpenChange={(o) => !o && setSelectedQuotation(null)}
-      />
-    </>
   );
 }

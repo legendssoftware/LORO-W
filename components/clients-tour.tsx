@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import { useAuth } from '@clerk/nextjs';
 import { usePathname } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
+import { tourButtonLabels } from '@/lib/use-monthly-page-tour';
 import type { TFunction } from 'i18next';
 import { driver, type DriveStep, type Driver } from 'driver.js';
 import 'driver.js/dist/driver.css';
@@ -59,6 +60,7 @@ function areTourTargetsReady(steps: DriveStep[]): boolean {
 
 export function ClientsTour() {
   const { t } = useTranslation('screens');
+  const { t: tCommon } = useTranslation('common');
   const pathname = usePathname();
   const { isLoaded, isSignedIn, userId } = useAuth();
   const blockTours = usePerformanceWarningPendingSafe().deferToursAndSalesBenchmarks;
@@ -135,9 +137,7 @@ export function ClientsTour() {
           smoothScroll: true,
           allowClose: true,
           popoverClass: DRIVER_TOUR_POPOVER_CLASS,
-          nextBtnText: 'Next',
-          prevBtnText: 'Previous',
-          doneBtnText: 'Done',
+          ...tourButtonLabels(tCommon),
           steps,
           onHighlighted: (_element, _step, { driver: activeDriver }) => {
             const activeIndex = activeDriver.getActiveIndex() ?? 0;

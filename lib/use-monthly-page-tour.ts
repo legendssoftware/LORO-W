@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { driver, type DriveStep, type Driver } from 'driver.js';
 import 'driver.js/dist/driver.css';
 import { getCurrentYearMonth } from '@/lib/tour-period';
@@ -11,6 +13,19 @@ import {
 import { scheduleTourWhenReady } from '@/lib/schedule-tour-when-ready';
 
 const DRIVER_TOUR_POPOVER_CLASS = 'loro-driver-tour';
+
+/** Next, Previous, and Done from the common catalog. Pass the `common` translator. */
+export function tourButtonLabels(t: TFunction): {
+  nextBtnText: string;
+  prevBtnText: string;
+  doneBtnText: string;
+} {
+  return {
+    nextBtnText: t('next'),
+    prevBtnText: t('previous'),
+    doneBtnText: t('done'),
+  };
+}
 
 export interface MonthlyPageTourOptions {
   enabled: boolean;
@@ -44,6 +59,9 @@ export function useMonthlyPageTour({
   onHighlight,
   maxPollCount,
 }: MonthlyPageTourOptions): void {
+  const { t: tCommon } = useTranslation('common');
+  const tCommonRef = useRef(tCommon);
+  tCommonRef.current = tCommon;
   const driverRef = useRef<Driver | null>(null);
   const hasAttemptedStartRef = useRef(false);
   const wasCompletedRef = useRef(false);
@@ -114,9 +132,7 @@ export function useMonthlyPageTour({
           smoothScroll: true,
           allowClose: true,
           popoverClass: DRIVER_TOUR_POPOVER_CLASS,
-          nextBtnText: 'Next',
-          prevBtnText: 'Previous',
-          doneBtnText: 'Done',
+          ...tourButtonLabels(tCommonRef.current),
           steps,
           onHighlighted: (_element, _step, { driver: activeDriver }) => {
             const stepElement = activeStepElement(activeDriver);

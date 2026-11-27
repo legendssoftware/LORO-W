@@ -14,16 +14,28 @@ import { usePerformanceWarningPendingSafe } from '@/contexts/performance-warning
 
 const SEL_HEADER = '[data-tour="reports-page-header"]';
 const SEL_TABS = '[data-tour="reports-tabs"]';
+const SEL_TARGETS = '[data-tour="reports-targets-toolbar"]';
+const SEL_POLICY = '[data-tour="reports-policy-tab"]';
 const SEL_QUALITY = '[data-tour="reports-call-quality-tab"]';
 const SEL_INSIGHTS = '[data-tour="reports-insights-tab"]';
+const SEL_TASKS = '[data-tour="reports-tasks-tab"]';
+const SEL_LEADS = '[data-tour="reports-leads-activity-tab"]';
+const SEL_TAB_TARGETS = '[data-tour="reports-tab-targets"]';
+const SEL_TAB_POLICY = '[data-tour="reports-tab-policy"]';
 const SEL_TAB_QUALITY = '[data-tour="reports-tab-call-quality"]';
 const SEL_TAB_INSIGHTS = '[data-tour="reports-tab-insights"]';
+const SEL_TAB_TASKS = '[data-tour="reports-tab-tasks"]';
+const SEL_TAB_LEADS = '[data-tour="reports-tab-leads-activity"]';
 
 const REQUIRED = [SEL_HEADER, SEL_TABS] as const;
 
 const TAB_FOR_STEP: Record<string, string> = {
+  [SEL_TARGETS]: SEL_TAB_TARGETS,
+  [SEL_POLICY]: SEL_TAB_POLICY,
   [SEL_QUALITY]: SEL_TAB_QUALITY,
   [SEL_INSIGHTS]: SEL_TAB_INSIGHTS,
+  [SEL_TASKS]: SEL_TAB_TASKS,
+  [SEL_LEADS]: SEL_TAB_LEADS,
 };
 
 function isOnScreen(selector: string): boolean {
@@ -62,6 +74,24 @@ function buildReportsSteps(t: TFunction): DriveStep[] {
       },
     },
     {
+      element: SEL_TARGETS,
+      popover: {
+        title: t('tours.reports.targets.title'),
+        description: t('tours.reports.targets.description'),
+        side: 'top',
+        align: 'center',
+      },
+    },
+    {
+      element: SEL_POLICY,
+      popover: {
+        title: t('tours.reports.policy.title'),
+        description: t('tours.reports.policy.description'),
+        side: 'top',
+        align: 'center',
+      },
+    },
+    {
       element: SEL_QUALITY,
       popover: {
         title: t('tours.reports.callQuality.title'),
@@ -75,6 +105,24 @@ function buildReportsSteps(t: TFunction): DriveStep[] {
       popover: {
         title: t('tours.reports.insights.title'),
         description: t('tours.reports.insights.description'),
+        side: 'top',
+        align: 'center',
+      },
+    },
+    {
+      element: SEL_TASKS,
+      popover: {
+        title: t('tours.reports.tasks.title'),
+        description: t('tours.reports.tasks.description'),
+        side: 'top',
+        align: 'center',
+      },
+    },
+    {
+      element: SEL_LEADS,
+      popover: {
+        title: t('tours.reports.leadsActivity.title'),
+        description: t('tours.reports.leadsActivity.description'),
         side: 'top',
         align: 'center',
       },

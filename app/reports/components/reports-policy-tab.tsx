@@ -186,7 +186,7 @@ export function ReportsPolicyTab() {
   const callsActual = totals?.calls.qualifying ?? 0;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4" data-tour="reports-policy-tab">
       <PolicyForecastCard />
 
       <ReportsDashboardToolbar

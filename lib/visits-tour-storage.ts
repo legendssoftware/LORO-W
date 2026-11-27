@@ -10,7 +10,7 @@ export interface VisitsTourState {
   completedThisMonth: boolean;
 }
 
-const VISITS_TOUR_KEY_PREFIX = 'loro_visits_tour_v3';
+const VISITS_TOUR_KEY_PREFIX = 'loro_visits_tour_v4';
 
 function buildVisitsTourKey(userId: string): string {
   return `${VISITS_TOUR_KEY_PREFIX}:${userId}`;

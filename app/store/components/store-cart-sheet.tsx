@@ -43,6 +43,8 @@ export function StoreCartSheet({
   const updateQuantity = useClientCartStore((s) => s.updateQuantity);
   const removeItem = useClientCartStore((s) => s.removeItem);
   const clear = useClientCartStore((s) => s.clear);
+  const openRequested = useClientCartStore((s) => s.openRequested);
+  const acknowledgeOpen = useClientCartStore((s) => s.acknowledgeOpen);
   const cartTotal = useClientCartStore((s) =>
     s.items.reduce((sum, item) => sum + item.totalPrice, 0)
   );
@@ -51,6 +53,12 @@ export function StoreCartSheet({
   );
 
   const [open, setOpen] = useState(false);
+  const sheetOpen = open || openRequested;
+
+  function handleOpenChange(next: boolean) {
+    setOpen(next);
+    if (!next) acknowledgeOpen();
+  }
   const [promoCode, setPromoCode] = useState('');
   const [deliveryMethod, setDeliveryMethod] = useState<DeliveryMethod>('collect');
   const [deliveryAddress, setDeliveryAddress] = useState('');
@@ -97,7 +105,7 @@ export function StoreCartSheet({
   }
 
   return (
-    <Sheet open={open} onOpenChange={setOpen}>
+    <Sheet open={sheetOpen} onOpenChange={handleOpenChange}>
       <SheetTrigger asChild>
         <Button
           className={cn(

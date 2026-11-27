@@ -129,6 +129,8 @@ body {
   color: var(--card-foreground);
   font-size: 0.875rem;
   line-height: 1.55;
+  max-height: min(42vh, 18rem);
+  overflow-y: auto;
 }
 
 .loro-driver-tour .driver-popover-description p {

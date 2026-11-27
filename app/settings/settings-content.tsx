@@ -1334,6 +1334,7 @@ export function SettingsContent() {
               size="sm"
               onClick={() => setActiveTab('profile')}
               className={tabBtnClass('profile')}
+              data-tour="settings-tab-profile"
             >
               <User className="mr-2 size-4" />
               {t('chrome.tabs.profile')}
@@ -1354,6 +1355,7 @@ export function SettingsContent() {
               size="sm"
               onClick={() => setActiveTab('regional')}
               className={tabBtnClass('regional')}
+              data-tour="settings-tab-regional"
             >
               <Globe className="mr-2 size-4" />
               {t('chrome.tabs.regional')}
@@ -1784,7 +1786,7 @@ export function SettingsContent() {
                   {t('chrome.sections.regional.description')}
                 </p>
               </div>
-              <div className="space-y-2 px-6 pt-4">
+              <div className="space-y-2 px-6 pt-4" data-tour="settings-language">
                 <Label htmlFor="user-language">{t('yourLanguage')}</Label>
                 <p className="text-sm text-muted-foreground">{t('yourLanguageDescription')}</p>
                 <LanguageSwitcher id="user-language" />

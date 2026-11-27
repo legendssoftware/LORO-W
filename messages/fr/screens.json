@@ -864,8 +864,8 @@
       "title": "Planification",
       "description": "Planifiez le terrain, les tournées et les relances au même endroit.",
       "routeTitle": "Comment fonctionne la planification des tournées",
-      "routeNote": "Chaque nuit, l’import ERP associe les clients au commercial du même code de vente, puis réserve des visites en semaine pour les quatre semaines suivantes. Chaque jour reste dans une zone proche (environ 40 km), jusqu’à 10 clients, dans l’ordre de conduite. Une zone plus pleine continue le lendemain avant une zone plus lointaine. Les clients qui ont déjà une visite d’aujourd’hui jusqu’à cette fenêtre restent tels quels. Les clients sans adresse sur la carte sont ignorés. Toutes les tâches inclut ces jours. Ouvrez Tournées et choisissez le jour planifié.",
-      "routeEmpty": "Aucune tournée pour ce jour. Choisissez le jour où les visites ont été planifiées. Chaque commercial a besoin d’une agence avec coordonnées, et les arrêts de ce jour forment une tournée."
+      "routeNote": "Chaque nuit, l’import ERP associe les clients au commercial du même code de vente, puis réserve des visites en semaine pour les quatre semaines suivantes. Chaque jour reste dans une zone proche (environ 40 km), jusqu’à 10 clients, dans l’ordre de conduite. Une zone plus pleine continue le lendemain avant une zone plus lointaine. Les clients qui ont déjà une visite d’aujourd’hui jusqu’à cette fenêtre restent tels quels. Les clients sans adresse sur la carte sont ignorés : ajoutez une position avant de les attendre sur une tournée. Toutes les tâches inclut ces jours à venir. Ouvrez Tournées, choisissez le jour planifié, et utilisez Recalculer lorsque ce jour doit être reconstruit. Le bouton d’info de cette page ouvre la même explication.",
+      "routeEmpty": "Aucune tournée pour ce jour. Choisissez le jour où les visites ont été planifiées, pas un jour vide plus loin. Chaque commercial a besoin d’une agence avec coordonnées, et les arrêts de ce jour forment une tournée. Si la liste reste vide, vérifiez l’épingle de l’agence et que l’import ERP de la nuit a bien tourné."
     },
     "pipeline": {
       "title": "Pipeline",
@@ -974,7 +974,7 @@
     },
     "orders": {
       "title": "Commandes",
-      "description": "Suivez les devis et les commandes par statut"
+      "description": "Consultez les commandes passées, ouvrez le détail, puis modifiez ou annulez tant qu'elles sont ouvertes."
     },
     "store": {
       "title": "Boutique",
@@ -994,691 +994,715 @@
     "leave": {
       "header": {
         "title": "Congés",
-        "description": "Demandez des congés, filtrez la boîte de réception, puis approuvez, refusez ou annulez une demande."
+        "description": "Cette boîte de réception est l’endroit où les congés sont demandés et décidés. Vous pouvez demander un congé, puis le suivre jusqu’à ce que quelqu’un l’approuve, le refuse ou l’annule. Les responsables voient les demandes qu’ils sont autorisés à décider. Vos propres demandes restent visibles même lorsque vous ne gérez que vos propres congés."
       },
       "actions": {
         "title": "Demander un congé",
-        "description": "Cliquez sur Demander un congé. Choisissez le type et les dates, puis envoyez pour décision."
+        "description": "Cliquez sur Demander un congé pour commencer une nouvelle demande. Choisissez le type de congé et les dates, puis envoyez-la pour décision. La demande apparaît dans cette boîte de réception dès qu’elle est envoyée. Elle n’est pas approuvée tant qu’une personne autorisée n’a pas agi."
       },
       "filters": {
         "title": "Filtrer la boîte de réception",
-        "description": "Restreignez par statut, personne et plage de dates. Vos propres demandes restent visibles lorsque vous ne voyez que vos congés."
+        "description": "Réduisez la liste par statut, personne et période. Utilisez ce filtre lorsque la boîte est longue et que vous ne voulez qu’un seul type de demande. Effacer un filtre rétablit la liste plus large. Si vous ne voyez que vos propres congés, vos demandes restent affichées."
       },
       "content": {
         "title": "Ouvrir une demande",
-        "description": "Le graphique compte les demandes par statut. Cliquez sur une ligne pour l'approuver, la refuser ou l'annuler."
+        "description": "Le graphique compte les demandes par statut, afin que vous voyiez la répartition avant d’ouvrir une ligne. Cliquez sur une ligne pour lire les dates et le motif. De là, vous pouvez approuver, refuser ou annuler, selon vos accès. Le statut de la ligne se met à jour une fois la décision enregistrée."
       }
     },
     "warnings": {
       "header": {
         "title": "Avertissements",
-        "description": "Avertissements de l'organisation. Un avertissement créé sur un profil collaborateur apparaît aussi ici."
+        "description": "Voici la liste des avertissements formels de l’organisation. Un avertissement créé sur un profil collaborateur apparaît aussi ici, vous n’avez donc pas à ouvrir chaque personne pour le trouver. Utilisez la liste pour revoir ce qui a été enregistré et qui est concerné. Retirer un avertissement ici le retire de la liste partagée."
       },
       "actions": {
         "title": "Émettre un avertissement",
-        "description": "Cliquez sur Émettre un avertissement. Indiquez la personne, le motif et le statut."
+        "description": "Cliquez sur Émettre un avertissement pour enregistrer un nouvel avertissement. Choisissez la personne, rédigez le motif et définissez le statut. L’avertissement est enregistré dans cette liste et apparaît aussi sur le profil collaborateur de cette personne. Seules les personnes autorisées à gérer les avertissements voient ce bouton."
       },
       "filters": {
         "title": "Filtrer par statut",
-        "description": "Affichez tous les avertissements, ou un seul statut."
+        "description": "Affichez tous les avertissements, ou ne gardez qu’un seul statut. La liste ci-dessous se met à jour dès que vous changez le filtre. Utilisez Tous lorsque vous voulez de nouveau l’historique complet. Le statut ici est l’état de l’avertissement, pas la présence de la personne."
       },
       "content": {
-        "title": "Consulter un avertissement",
-        "description": "Cliquez sur une ligne pour le lire ou le supprimer."
+        "title": "Examiner un avertissement",
+        "description": "Chaque ligne est un avertissement, avec la personne et le motif. Cliquez sur une ligne pour lire l’enregistrement complet. Vous pouvez le retirer de là lorsque vous y êtes autorisé. La ligne quitte la liste une fois qu’elle est retirée."
       }
     },
     "documents": {
       "header": {
         "title": "Documents",
-        "description": "Listez, téléchargez et joignez des documents à une personne."
+        "description": "Cette page liste les fichiers joints aux personnes de l’organisation. Vous pouvez trouver un document, le télécharger ou joindre un nouveau fichier à une personne. Le fichier reste lié à cette personne après l’enregistrement. Utilisez Équipe si vous avez besoin du reste de son profil."
       },
       "actions": {
         "title": "Joindre un document",
-        "description": "Cliquez sur Joindre un document. Téléversez le fichier et associez-le à une personne."
+        "description": "Cliquez sur Joindre un document pour téléverser un fichier et le lier à une personne. Choisissez la personne et le fichier, puis enregistrez. La nouvelle ligne apparaît dans la liste lorsque le téléversement est terminé. Le fichier n’est pas joint tant que vous n’avez pas terminé cet enregistrement."
       },
       "filters": {
         "title": "Filtrer par titre",
-        "description": "Saisissez une partie du titre pour raccourcir la liste."
+        "description": "Saisissez une partie d’un titre pour raccourcir la liste. La correspondance commence au fil de la saisie, vous n’avez donc pas besoin du nom complet. Effacez le champ pour revoir tous les documents. Le filtre porte sur le titre, pas sur le contenu du fichier."
       },
       "content": {
         "title": "Télécharger un fichier",
-        "description": "Chaque ligne est un document. Téléchargez-le depuis la ligne."
+        "description": "Chaque ligne est un document lié à une personne. Télécharger enregistre ce fichier sur votre appareil. Ouvrez la ligne si vous devez voir à qui il appartient. Le téléchargement utilise le fichier qui a été téléversé, pas une nouvelle copie générée ici."
       }
     },
     "feedback": {
       "header": {
         "title": "Retours",
-        "description": "La boîte de réception, les compteurs par statut et les mises à jour. L'expiration du jeton reste dans Paramètres."
+        "description": "Cette boîte de réception contient les retours envoyés à l’organisation, avec un compte pour chaque statut. Vous pouvez voir ce qui est nouveau, en cours d’examen, résolu ou fermé, puis mettre à jour une ligne. L’expiration du jeton des liens de retour reste dans Paramètres, pas sur cette page. Résoudre une ligne ne supprime pas le message d’origine."
       },
       "filters": {
         "title": "Filtrer par statut",
-        "description": "Affichez tous les retours, ou seulement Nouveau, En revue, Résolu ou Fermé."
+        "description": "Affichez tous les retours, ou seulement Nouveau, En cours d’examen, Résolu ou Fermé. La liste et le graphique suivent le statut que vous choisissez. Utilisez Tous lorsque vous voulez de nouveau la boîte complète. Une ligne reste dans son statut tant que personne ne le change."
       },
       "content": {
         "title": "Résoudre un retour",
-        "description": "Le graphique compte chaque statut. Cliquez sur Résoudre sur une ligne pour le marquer comme résolu."
+        "description": "Le graphique compte chaque statut, afin que vous voyiez la charge avant d’ouvrir une ligne. Cliquez sur Résoudre sur une ligne pour marquer cet élément comme résolu. Le compte passe du statut précédent à Résolu une fois la mise à jour enregistrée. Fermé est un statut distinct si vous devez le terminer plus tard."
       }
     },
     "geofences": {
       "header": {
         "title": "Géorepérages",
-        "description": "Créez des zones et consultez les événements d'entrée. Les mêmes zones s'affichent dans Vue d'ensemble des concurrents."
+        "description": "Un géorepérage est une zone nommée sur la carte, avec un centre et un rayon. Créez des zones ici, puis consultez les événements d’entrée qu’elles enregistrent. Les mêmes zones sont dessinées sur Vue de la concurrence, donc une modification ici apparaît sur cette carte. Une zone sans événement reste quand même dans la liste."
       },
       "actions": {
         "title": "Nouvelle zone",
-        "description": "Cliquez sur Nouvelle zone. Définissez le nom, la latitude, la longitude et le rayon en mètres."
+        "description": "Cliquez sur Nouvelle zone pour ajouter un géorepérage. Définissez le nom, la latitude, la longitude et le rayon en mètres. Enregistrez-le et la zone est disponible pour le suivi des entrées et pour la carte. Le rayon est la distance depuis le centre, pas un temps de trajet."
       },
       "content": {
         "title": "Ouvrir une zone",
-        "description": "Cliquez sur une ligne pour modifier la zone ou voir combien d'événements d'entrée elle a enregistrés."
+        "description": "Cliquez sur une ligne pour modifier le nom, le centre ou le rayon. La même boîte de dialogue indique combien d’événements d’entrée cette zone a enregistrés. L’enregistrement écrit la nouvelle limite. Les événements déjà enregistrés restent attachés à cette zone."
       }
     },
     "usage": {
       "header": {
         "title": "Utilisation",
-        "description": "Analyses, synthèses et utilisation des licences. Le serveur enregistre les événements lui-même."
+        "description": "Cette page montre comment l’organisation utilise LORO : volume des requêtes, synthèses et licence. Le serveur enregistre lui-même les événements, il n’y a donc rien à importer. Utilisez-la pour voir l’activité et si la licence approche de sa limite. C’est un rapport d’utilisation, pas un endroit pour modifier les paramètres."
       },
       "content": {
-        "title": "Lire les 30 derniers jours",
-        "description": "Le graphique est le volume de requêtes. En dessous, la ligne de licence montre les erreurs et le quota, et la liste est les requêtes par endpoint."
+        "title": "Consulter les 30 derniers jours",
+        "description": "Le graphique est le volume de requêtes sur les 30 derniers jours. En dessous, la ligne de licence indique les erreurs et la part du quota utilisée. La liste ventile les requêtes par endpoint, afin que vous voyiez quelles parties de l’application sont les plus appelées. Les chiffres se rafraîchissent depuis le serveur. Ils ne se modifient pas sur cette page."
       }
     },
     "products": {
       "header": {
         "title": "Produits",
-        "description": "Créez, modifiez, archivez, restaurez et consultez les prix du catalogue."
+        "description": "Voici le catalogue de produits : noms, prix et indication qu’un article est actif. Vous pouvez créer un produit, le modifier, l’archiver ou le restaurer. Les prix affichés ici sont les prix du catalogue utilisés lorsque des personnes établissent des devis. L’archivage masque un produit pour les nouveaux usages sans supprimer son historique."
       },
       "actions": {
         "title": "Nouveau produit",
-        "description": "Cliquez sur Nouveau produit. Saisissez le nom et le prix, puis enregistrez-le dans le catalogue."
+        "description": "Cliquez sur Nouveau produit pour ajouter un article au catalogue. Saisissez le nom et le prix, puis enregistrez. Le produit apparaît dans la liste et peut être choisi lorsqu’un devis est établi. Il n’est pas dans le catalogue tant que cet enregistrement n’est pas terminé."
       },
       "content": {
         "title": "Modifier un produit",
-        "description": "Cliquez sur une ligne pour changer le nom ou le prix. Enregistrer les prix actuels écrit les prix à l'écran."
+        "description": "Cliquez sur une ligne pour changer le nom ou le prix, ou pour l’archiver puis le restaurer. Enregistrer les prix actuels écrit les prix que vous voyez à l’écran pour les lignes affichées. Un changement de prix s’applique aux nouveaux devis. Il ne réécrit pas les devis déjà émis."
       }
     },
     "news": {
       "header": {
         "title": "Actualités",
-        "description": "Annonces de l'organisation."
+        "description": "Actualités est le tableau d’annonces de l’organisation. Les articles que vous publiez ici sont ce que les personnes voient comme actualités de l’entreprise. Rédigez une nouvelle annonce ou ouvrez-en une existante pour la corriger. Un article est visible après l’enregistrement. Le texte brouillon du formulaire n’est pas publié tant que cet enregistrement n’a pas lieu."
       },
       "actions": {
-        "title": "Nouvelle publication",
-        "description": "Cliquez sur Nouvelle publication. Rédigez le titre et l'annonce, puis enregistrez."
+        "title": "Nouvel article",
+        "description": "Cliquez sur Nouvel article pour rédiger une annonce. Ajoutez le titre et le message, puis enregistrez. L’article rejoint cette liste et constitue l’annonce que les personnes peuvent lire. Fermer le formulaire sans enregistrer abandonne le texte que vous avez saisi."
       },
       "content": {
-        "title": "Modifier une publication",
-        "description": "Cliquez sur une ligne pour modifier cette annonce."
+        "title": "Modifier un article",
+        "description": "Cliquez sur une ligne pour modifier cette annonce. Mettez à jour le titre ou le message, puis enregistrez. La liste affiche la version enregistrée, pas le texte encore présent dans le formulaire. Les personnes qui lisent les actualités voient l’article après l’enregistrement, pas pendant que vous modifiez encore."
       }
     },
     "sales-tips": {
       "header": {
         "title": "Conseils de vente",
-        "description": "Modifiez le catalogue. L'accueil affiche toujours le conseil du jour."
+        "description": "Voici le catalogue des conseils de vente. Accueil affiche toujours un conseil du jour issu de cette liste, donc une modification ici change ce qui peut être montré. Ajoutez un conseil ou ouvrez-en un pour le réécrire. Le conseil du jour est choisi parmi les conseils enregistrés, pas depuis un formulaire non enregistré."
       },
       "actions": {
         "title": "Nouveau conseil",
-        "description": "Cliquez sur Nouveau conseil. Ajoutez un titre et le texte du conseil."
+        "description": "Cliquez sur Nouveau conseil pour ajouter un conseil au catalogue. Saisissez un titre et le texte du conseil, puis enregistrez. Le conseil rejoint cette liste et devient disponible comme conseil du jour sur Accueil. Il n’est pas dans le catalogue tant que vous n’enregistrez pas."
       },
       "content": {
         "title": "Modifier un conseil",
-        "description": "Cliquez sur une ligne pour mettre à jour ce conseil."
+        "description": "Cliquez sur une ligne pour mettre à jour ce conseil. Changez le titre ou le texte, puis enregistrez. Accueil utilise la formulation enregistrée la prochaine fois qu’il choisit ce conseil. Le texte que vous n’avez pas encore enregistré reste uniquement dans le formulaire."
       }
     },
     "resellers": {
       "header": {
         "title": "Revendeurs",
-        "description": "Ajoutez, modifiez, archivez et restaurez les fiches revendeurs."
+        "description": "Cette liste est le registre des revendeurs. Vous pouvez ajouter un revendeur, modifier la fiche, archiver celui que vous n’utilisez plus ou restaurer une fiche archivée. L’archivage conserve l’historique et retire le revendeur de l’usage actif. Une fiche restaurée revient dans la liste active."
       },
       "actions": {
         "title": "Nouveau revendeur",
-        "description": "Cliquez sur Nouveau revendeur. Commencez la fiche avec un nom, puis enregistrez les détails."
+        "description": "Cliquez sur Nouveau revendeur pour commencer une fiche. Commencez par le nom, puis remplissez les détails et enregistrez. Le revendeur apparaît dans cette liste après l’enregistrement. Fermer le formulaire sans enregistrer ne crée pas de fiche."
       },
       "content": {
         "title": "Ouvrir un revendeur",
-        "description": "Cliquez sur une ligne pour modifier, archiver ou restaurer ce revendeur."
+        "description": "Cliquez sur une ligne pour modifier ce revendeur, l’archiver ou le restaurer. Enregistrer écrit les détails que vous avez changés. Archiver le masque de l’usage actif et laisse l’ancienne fiche en place. Restaurer ramène un revendeur archivé dans la liste active."
       }
     },
     "rewards": {
       "header": {
         "title": "Récompenses",
-        "description": "Le classement XP et la position de chaque personne."
+        "description": "Récompenses est le classement XP de l’organisation. Vous pouvez voir qui est en tête et où se situe une personne. L’XP se gagne par l’activité dans LORO. Cette page lit le classement. Ce n’est pas ici que vous attribuez des points à la main."
       },
       "content": {
         "title": "Lire le classement",
-        "description": "Le graphique est le haut du classement. La liste en dessous est l'XP de chaque personne."
+        "description": "Le graphique est le haut du classement, afin que les premiers soient faciles à comparer. La liste en dessous est l’XP de chaque personne, y compris celles qui ne figurent pas dans le graphique. Utilisez-la pour voir le classement, pas pour modifier un score. Les chiffres suivent l’XP déjà enregistré."
       }
     },
     "loyalty": {
       "header": {
         "title": "Fidélité",
-        "description": "Profils, catalogue de récompenses et historique des demandes."
+        "description": "Fidélité contient le catalogue de récompenses, qui peut les réclamer et l’historique des réclamations. Vous pouvez ajouter une récompense, puis enregistrer une réclamation sur ce catalogue. L’historique sous la liste correspond aux transactions et aux diffusions déjà enregistrées. Une réclamation utilise une récompense qui existe dans le catalogue."
       },
       "content": {
         "title": "Ajouter et réclamer des récompenses",
-        "description": "Saisissez un nom de récompense et cliquez sur Ajouter une récompense. Réclamer utilise une récompense du catalogue. La ligne sous la liste est l'historique des transactions et des diffusions."
+        "description": "Saisissez un nom de récompense et cliquez sur Ajouter une récompense pour la placer dans le catalogue. Réclamer utilise l’une de ces récompenses du catalogue et l’enregistre pour la personne. La ligne sous la liste est l’historique des transactions et des diffusions, afin que vous voyiez ce qui a déjà été donné. Une réclamation est enregistrée lorsque vous la confirmez, pas lorsque vous ne faites que saisir le nom."
       }
     },
     "claims": {
       "header": {
         "title": "Notes de frais",
-        "description": "Soumettez des dépenses, joignez des reçus et suivez chaque note de l'approbation au paiement."
-      },
-      "summary": {
-        "title": "Totaux par étape",
-        "description": "Cliquez sur Total, En attente, Approuvé, Refusé ou Payé. La liste ci-dessous suit cette étape."
+        "description": "Notes de frais est l’endroit où les dépenses sont soumises, approuvées et payées. Joignez un reçu, puis suivez la note depuis la première soumission jusqu’à la décision et au paiement. Vous pouvez rechercher dans la liste, l’exporter ou ouvrir une note pour voir le reçu et le statut. Une note reste à son étape actuelle tant que personne ne la fait avancer."
       },
       "toolbar": {
         "title": "Rechercher, exporter et créer",
-        "description": "Filtrez par date, groupe, devise ou personne. Exporter télécharge une feuille de calcul. Nouvelle note démarre une soumission."
+        "description": "Filtrez par date, dossier, devise ou personne. Le contrôle de statut suit une étape : Total, En attente, Approuvée, Refusée ou Payée, et la liste ci-dessous n’affiche que cette étape. Exporter télécharge une feuille de calcul des notes affichées. Nouvelle note de frais commence une soumission. Rien n’est envoyé tant que vous ne soumettez pas le formulaire avec le reçu."
       },
       "folders": {
         "title": "Dossiers de notes",
-        "description": "Cliquez sur un dossier pour n'afficher que les notes de ce groupe."
+        "description": "Les dossiers regroupent les notes de frais afin qu’une équipe puisse garder un type de dépense ensemble. Cliquez sur un dossier pour n’afficher que les notes de ce groupe. La liste suit le dossier que vous choisissez. Choisissez de nouveau la vue plus large lorsque vous voulez tous les dossiers."
       },
       "list": {
         "title": "Ouvrir une note",
-        "description": "Les notes sont groupées. Cliquez-en une pour suivre le reçu, la décision et le paiement."
+        "description": "Les notes sont regroupées, de sorte que les soumissions liées se trouvent ensemble. Cliquez sur l’une d’elles pour suivre le reçu, la décision et le paiement. L’étape que vous avez filtrée dans la barre d’outils est l’ensemble des lignes que vous voyez ici. Le statut de paiement se met à jour une fois la note traitée, pas lorsque vous ne faites que l’ouvrir."
       }
     },
     "iot": {
       "header": {
         "title": "Appareils IoT",
-        "description": "Matériel connecté et appareils d'accès, organisés par agence."
+        "description": "Voici le registre du matériel connecté et des appareils d’accès. Les appareils sont organisés par agence, afin que vous voyiez ce qui se trouve sur chaque site. Ouvrez une carte pour inspecter un appareil, ou ajoutez-en un lorsque du nouveau matériel est installé. Un appareil n’est pas dans la liste tant que sa fiche n’est pas enregistrée."
       },
       "toolbar": {
         "title": "Filtrer les appareils",
-        "description": "Filtrez par statut, type ou agence, puis recherchez par id, étiquette ou emplacement."
+        "description": "Filtrez par statut, type ou agence, puis recherchez par ID, tag ou emplacement. La grille n’affiche que les appareils qui correspondent. Effacez les filtres pour revoir le registre complet. La recherche porte sur ces identifiants, pas sur des notes enfouies dans un appareil."
       },
       "add": {
         "title": "Ajouter un appareil",
-        "description": "Cliquez sur Ajouter un appareil. Enregistrez le matériel et l'agence à laquelle il appartient."
+        "description": "Cliquez sur Ajouter un appareil pour enregistrer du nouveau matériel. Saisissez l’appareil et l’agence à laquelle il appartient, puis enregistrez. La carte apparaît dans la grille de cette agence. L’appareil n’est pas suivi ici tant que la fiche n’est pas enregistrée."
       },
       "grid": {
         "title": "Ouvrir un appareil",
-        "description": "Cliquez sur une carte pour inspecter ou modifier cet appareil."
+        "description": "Chaque carte est un appareil d’une agence. Cliquez sur une carte pour l’inspecter ou modifier la fiche. Les modifications s’appliquent après que vous les avez enregistrées sur l’appareil. Les filtres ci-dessus limitent toujours les cartes affichées."
       }
     },
     "approvals": {
       "header": {
         "title": "Approbations",
-        "description": "Filtrez par statut ou type, déposez une demande générale avec Nouvelle demande, puis ouvrez une carte pour approuver ou refuser. Les formulaires d'intégration s'ouvrent depuis la même carte ; les webhooks sortants partent à l'approbation."
+        "description": "Approbations est la file des demandes qui nécessitent une décision. Filtrez par statut ou par type, déposez une demande générale avec Nouvelle demande, puis ouvrez une carte pour approuver ou refuser. Les formulaires d’entrée s’ouvrent depuis la même carte. Lorsqu’une demande est approuvée, les webhooks sortants se déclenchent pour les intégrations qui écoutent cet événement."
       },
       "toolbar": {
         "title": "Filtrer et Nouvelle demande",
-        "description": "Filtrez par statut ou type. Nouvelle demande dépose une approbation générale. Mes demandes montre celles que vous avez soumises."
+        "description": "Filtrez par statut ou par type afin que la file n’affiche qu’un type de demande. Nouvelle demande dépose une approbation générale et l’ajoute à la file. Mes demandes affiche celles que vous avez soumises, ce qui est utile lorsque vous attendez une décision. La liste se met à jour selon le filtre. Une nouvelle demande est déposée lorsque vous la soumettez."
       },
       "list": {
         "title": "Ouvrir une carte",
-        "description": "Ouvrez une carte pour approuver ou refuser. Les formulaires d'intégration s'ouvrent depuis la même carte. À l'approbation, les webhooks sortants partent."
+        "description": "Ouvrez une carte pour approuver ou refuser cette demande. Les formulaires d’entrée s’ouvrent depuis la même carte lorsque la demande en utilise un. Approuver enregistre la décision et peut déclencher des webhooks sortants. Refuser enregistre la décision sans traiter la demande comme approuvée."
       }
     },
     "payslips": {
       "header": {
         "title": "Bulletins de paie",
-        "description": "Consultez et téléchargez vos bulletins de paie."
-      },
-      "import": {
-        "title": "Importer depuis le stockage",
-        "description": "Prévisualisez l'import depuis le stockage, puis confirmez-le. Seules les personnes autorisées à importer des bulletins voient ceci."
+        "description": "Bulletins de paie liste les documents de bulletin qui vous sont disponibles. Vous pouvez consulter un bulletin à l’écran ou télécharger le fichier. La liste peut couvrir toute la période, ou une plage de dates et un statut que vous choisissez. Cette page lit des documents qui existent déjà. Ce n’est pas le traitement de la paie lui-même."
       },
       "filters": {
         "title": "Filtrer les bulletins",
-        "description": "La liste commence sur tout le temps. Passez à une plage de dates ou un statut pour la restreindre."
+        "description": "La liste commence sur toute la période, de sorte que les bulletins plus anciens sont inclus jusqu’à ce que vous la réduisiez. Passez à une plage de dates ou à un statut lorsque vous voulez un ensemble plus petit. Le tableau ci-dessous suit ce filtre. Effacez-le pour revenir à la liste complète."
       },
       "table": {
         "title": "Voir ou télécharger",
-        "description": "Voir ouvre le bulletin. Télécharger enregistre le fichier. La taille de page sous le tableau définit combien de lignes se chargent."
+        "description": "Chaque ligne est un bulletin de paie. Voir l’ouvre à l’écran. Télécharger enregistre le fichier sur votre appareil. La taille de page sous le tableau définit combien de lignes se chargent à la fois. Le fichier est le bulletin stocké, pas un nouveau calcul fait sur cette page."
       }
     },
     "competitors": {
       "header": {
         "title": "Concurrents",
-        "description": "Suivez les rivaux, les niveaux de menace et les emplacements aux côtés de vos clients."
+        "description": "Concurrents est le registre des rivaux que vous suivez à côté de vos clients. Chaque fiche peut porter un niveau de menace, le fait que le rival soit direct ou indirect, et un emplacement. Ajoutez-en un à la main ou importez une feuille de calcul. Les mêmes emplacements peuvent être vus avec vos sites sur Vue de la concurrence."
       },
       "toolbar": {
         "title": "Filtrer et rechercher",
-        "description": "Filtrez par statut, direct ou indirect, et niveau de menace. Recherchez par nom."
+        "description": "Filtrez par statut, direct ou indirect, et niveau de menace. Recherchez par nom lorsque vous connaissez déjà le rival. La grille n’affiche que les correspondances. Effacez les filtres pour revoir le registre complet."
       },
       "add": {
         "title": "Ajouter un concurrent",
-        "description": "Cliquez sur Ajouter un concurrent, ou sur Importer pour apporter une feuille de calcul. Les deux arrivent dans cette grille."
+        "description": "Cliquez sur Ajouter un concurrent pour créer une fiche, ou sur Importer pour charger une feuille de calcul. Les deux arrivent dans cette grille une fois enregistrés. Vérifiez un import avant de vous fier à la menace et à l’emplacement. Une ligne n’est pas dans le registre tant que l’ajout ou l’import n’est pas terminé."
       },
       "grid": {
         "title": "Ouvrir un concurrent",
-        "description": "Cliquez sur une carte pour la menace, l'emplacement, et modifier ou supprimer lorsque vous gérez la liste."
+        "description": "Cliquez sur une carte pour la menace, l’emplacement et le reste de la fiche. Lorsque vous gérez la liste, vous pouvez la modifier ou la supprimer de là. Supprimer retire ce rival du registre. La carte géographique utilise l’emplacement enregistré sur la fiche."
       }
     },
     "takeoff": {
       "header": {
         "title": "Métré système",
-        "description": "Mesurez un plafond ou une cloison. Les quantités sont calculées sur le serveur, puis émises comme devis."
+        "description": "Un métré mesure un plafond ou une cloison pour un chantier. Vous nommez le chantier et le client, puis vous mesurez. Les quantités sont calculées sur le serveur, et le résultat peut être émis comme devis. La liste indique le statut et le total de chaque métré. La mesure se poursuit dans le métré, pas sur cette liste."
       },
       "create": {
         "title": "Nouveau métré",
-        "description": "Cliquez sur Nouveau métré. Nommez le chantier et le client, puis ouvrez-le pour mesurer."
+        "description": "Cliquez sur Nouveau métré pour commencer un chantier. Nommez le chantier et le client, puis ouvrez-le pour mesurer. Le nouveau métré apparaît dans la liste une fois créé. Les quantités restent vides tant que vous ne mesurez pas dans ce métré."
       },
       "list": {
         "title": "Ouvrir un métré",
-        "description": "Cliquez sur une référence pour continuer à mesurer et émettre le devis. Le statut et le total restent sur cette ligne."
+        "description": "Cliquez sur une référence pour continuer à mesurer et, lorsqu’il est prêt, émettre le devis. Le statut et le total restent sur cette ligne afin que vous voyiez l’avancement sans l’ouvrir. Le devis utilise les quantités calculées par le serveur. L’émission ne se fait pas depuis la ligne seule."
       }
     },
     "deliveries": {
       "header": {
         "title": "Livraisons",
-        "description": "Assignez une commande de vente ERP ouverte à un chauffeur, filtrez la liste, puis ouvrez une ligne pour l'itinéraire et la preuve de livraison."
+        "description": "Livraisons assigne une commande de vente ERP ouverte à un chauffeur et suit l’arrêt. Filtrez la liste, assignez une livraison, puis ouvrez une ligne pour l’itinéraire et la preuve de livraison signée (POD). La commande vient de l’ERP. L’assignation et le POD sont ce que vous enregistrez ici."
       },
       "toolbar": {
         "title": "Filtrer les livraisons",
-        "description": "Filtrez par jour, statut, chauffeur ou recherche. La taille de page sous le tableau définit combien de lignes se chargent."
+        "description": "Filtrez par jour, statut, chauffeur ou recherche afin que le tableau n’affiche qu’une partie du travail. La taille de page sous le tableau définit combien de lignes se chargent. La liste suit le filtre immédiatement. Effacez-le lorsque vous voulez de nouveau toutes les livraisons de l’ensemble plus large."
       },
       "assign": {
         "title": "Assigner une livraison",
-        "description": "Cliquez sur Assigner une livraison. Choisissez une commande de vente ERP ouverte et le chauffeur qui fera l'arrêt."
+        "description": "Cliquez sur Assigner une livraison pour confier un arrêt à un chauffeur. Choisissez une commande de vente ERP ouverte et le chauffeur qui l’effectuera, puis enregistrez. La livraison apparaît dans la liste pour ce chauffeur et ce jour. Elle n’est pas assignée tant que vous ne confirmez pas le formulaire."
       },
       "list": {
         "title": "Ouvrir une livraison",
-        "description": "Cliquez sur une ligne pour l'itinéraire et la preuve de livraison signée (POD)."
+        "description": "Cliquez sur une ligne pour l’itinéraire et la preuve de livraison signée (POD). Utilisez-la pour voir si l’arrêt est encore ouvert ou déjà terminé. Le POD est l’enregistrement signé de cette livraison. Modifier l’itinéraire ne change pas la commande de vente ERP d’origine."
       }
     },
     "store-operations": {
       "header": {
         "title": "Opérations magasin",
-        "description": "Ouvertures d'agences en direct, listes de contrôle et inventaires dans tous les magasins."
+        "description": "Opérations magasin est la vue en direct des ouvertures d’agence, des listes de contrôle et des comptages de stock dans tous les magasins. Vue d’ensemble est le tableau du jour. Détails est la liste plus longue, magasin par magasin. Les chiffres suivent le pays, la région et la période que vous définissez. Un magasin qui n’a pas encore ouvert apparaît quand même, afin que vous voyiez qu’il manque."
       },
       "tabs": {
-        "title": "Vue d'ensemble et détails",
-        "description": "Vue d'ensemble est le tableau en direct. Détails est la liste plus longue magasin par magasin."
+        "title": "Vue d’ensemble et détails",
+        "description": "Vue d’ensemble est le tableau en direct : des totaux sur lesquels vous pouvez cliquer, puis les magasins de cette tranche. Détails est la liste plus longue, magasin par magasin, lorsque vous avez besoin de plus que le tableau. Changer d’onglet ne modifie pas le pays, la région ou la période. Utilisez Détails lorsque le tableau est trop compact."
       },
       "filters": {
         "title": "Restreindre les magasins",
-        "description": "Filtrez par pays, région et période. Fonctionnalités ouvre les outils supplémentaires d'opérations magasin."
+        "description": "Filtrez par pays, région et période afin que le tableau corresponde aux magasins voulus. Fonctionnalités ouvre les outils supplémentaires d’opérations magasin. Les totaux et la liste des magasins suivent ces filtres. Un magasin hors du filtre reste masqué jusqu’à ce que vous l’élargissiez."
       },
       "summary": {
-        "title": "Cliquez sur un total",
-        "description": "Chaque carte est une tranche de la journée : tous les magasins, ouverts à l'heure, en retard, manqués, fermés à l'heure ou listes terminées. Cliquez-en une pour ne garder que ces magasins."
+        "title": "Cliquer sur un total",
+        "description": "Chaque carte est une tranche de la journée : tous les magasins, ouverts à l’heure, en retard, manqués, fermés à l’heure ou check-lists terminées. Cliquez sur l’une d’elles pour ne garder que ces magasins dans la liste. Cliquez sur le total plus large pour revoir tous les magasins du filtre. Les cartes comptent la période en cours, pas un autre mois."
       },
       "stores": {
         "title": "Statut du magasin",
-        "description": "Chaque ligne est l'ouverture et la liste de contrôle d'une agence en ce moment. Ouvrez-la pour la session de ce magasin."
+        "description": "Chaque ligne est l’ouverture et la liste de contrôle d’une agence en ce moment. Ouvrez-la pour la session de ce magasin, y compris ce qui a été terminé et ce qui est encore ouvert. La ligne suit le total sur lequel vous avez cliqué au-dessus. Les comptages de stock et les réponses de liste de contrôle se trouvent dans la session, pas sur la carte de synthèse."
       }
     },
     "store": {
       "header": {
         "title": "Boutique",
-        "description": "Parcourez les produits, ajoutez-les au panier et soumettez un devis."
+        "description": "La boutique est le catalogue dans lequel vous achetez. Parcourez les produits, ajoutez-les à votre panier et soumettez ce panier comme devis. Recherchez ou filtrez lorsque le catalogue est long. Le devis est créé lorsque vous soumettez le panier, pas lorsque vous ne faites qu’ouvrir un produit."
       },
       "toolbar": {
         "title": "Recherche et panier",
-        "description": "Recherchez ou filtrez par catégorie. Le panier contient les lignes que vous enverrez comme devis."
+        "description": "Recherchez ou filtrez par catégorie pour trouver un produit. Le panier contient les lignes que vous enverrez comme devis. Modifiez les quantités dans le panier avant de soumettre. Quitter la page ne soumet pas le devis à votre place."
       },
       "catalogue": {
         "title": "Ajouter un produit",
-        "description": "Cliquez sur un produit pour l'ajouter au panier. Charger plus apporte la page suivante du catalogue."
+        "description": "Cliquez sur un produit pour l’ajouter au panier. Charger plus affiche la page suivante du catalogue lorsque la liste dépasse une page. Le panier se met à jour au fur et à mesure que vous ajoutez des lignes. Ces lignes ne deviennent un devis qu’après la soumission du panier."
       }
     },
     "orders": {
       "header": {
         "title": "Commandes",
-        "description": "Suivez les devis et les commandes par statut."
+        "description": "Commandes suit les devis et les commandes par statut, du premier devis jusqu’à une commande terminée. Le tableau est en colonnes, et chaque carte est un devis ou une commande. Ouvrez une carte pour le détail. Nouvelle commande vous envoie à la boutique pour établir le devis suivant."
       },
       "create": {
         "title": "Nouvelle commande",
-        "description": "Cliquez sur Nouvelle commande. Cela ouvre la boutique pour construire le prochain devis."
+        "description": "Cliquez sur Nouvelle commande. Cela ouvre la boutique afin que vous puissiez établir le devis suivant et le soumettre. La nouvelle carte apparaît sur ce tableau une fois le devis soumis. Cliquer sur le bouton ne crée pas une commande vide à lui seul."
       },
       "board": {
         "title": "Ouvrir une commande",
-        "description": "Les colonnes sont les statuts de devis et de commande. Cliquez sur une carte pour le détail."
+        "description": "Les colonnes sont les statuts de devis et de commande, afin que vous voyiez ce qui attend et ce qui a avancé. Cliquez sur une carte pour le détail, y compris les lignes et le statut actuel. Faire avancer le travail met à jour la colonne une fois le statut enregistré. Une carte reste dans sa colonne tant que cela n’a pas lieu."
       }
     },
     "projects": {
       "header": {
         "title": "Projets",
-        "description": "Gérez vos projets, créez-en de nouveaux et suivez leur avancement."
+        "description": "Projets est l’endroit où vous conservez les affaires, en créez de nouvelles et voyez où en est chacune. Un projet commence par un nom, puis rassemble son avancement sur la carte. Ouvrez une carte pour le détail. Créer un projet n’ajoute que la fiche. Cela ne planifie pas les visites ni les tâches tout seul."
       },
       "create": {
         "title": "Créer un projet",
-        "description": "Cliquez sur Créer un projet. Nommez-le, puis il apparaît dans cette grille."
+        "description": "Cliquez sur Créer un projet, nommez-le et enregistrez. Le projet apparaît dans cette grille. Vous pouvez l’ouvrir ensuite pour ajouter le reste du détail. Fermer le formulaire sans enregistrer n’ajoute pas de carte."
       },
       "filters": {
         "title": "Filtrer les projets",
-        "description": "Recherchez par nom ou description, ou conservez un statut."
+        "description": "Recherchez par nom ou description, ou ne gardez qu’un seul statut. La grille n’affiche que les projets qui correspondent. Effacez la recherche et le statut lorsque vous voulez de nouveau l’ensemble complet. Le filtre ne change pas le statut d’un projet. Il ne fait que masquer des lignes."
       },
       "grid": {
         "title": "Ouvrir un projet",
-        "description": "Cliquez sur une carte pour l'avancement et le détail du projet."
+        "description": "Cliquez sur une carte pour l’avancement et le détail du projet. Mettez à jour le projet depuis cet écran, puis revenez ici pour voir la carte. Le statut sur la carte suit ce qui a été enregistré. Les modifications non enregistrées dans le projet y restent tant que vous ne les enregistrez pas."
       }
     },
     "account": {
       "header": {
         "title": "Compte",
-        "description": "Le profil de votre entreprise, le crédit et les coordonnées."
+        "description": "Compte est le profil de votre entreprise : qui vous êtes, comment vous contacter et les détails commerciaux du compte. Vous pouvez lire l’aperçu ou passer en modification. Le crédit et le commercial assigné sont affichés avec les détails de l’entreprise. Les modifications ne sont conservées qu’après l’enregistrement du formulaire."
       },
       "edit": {
         "title": "Modifier le profil",
-        "description": "Cliquez sur Modifier le profil pour changer les détails de l'entreprise. Voir le profil revient aux cartes en lecture seule."
+        "description": "Cliquez sur Modifier le profil pour changer les détails de l’entreprise. Les cartes deviennent un formulaire. Voir le profil revient aux cartes en lecture seule. Revenir en arrière sans enregistrer abandonne les modifications qui n’ont pas été enregistrées."
       },
       "profile": {
-        "title": "Aperçu de l'entreprise",
-        "description": "Nom, contact, adresse, limite de crédit et le commercial qui vous est assigné."
+        "title": "Aperçu de l’entreprise",
+        "description": "Voici l’aperçu en lecture seule : nom, contact, adresse, limite de crédit et commercial qui vous est assigné. Utilisez-le pour confirmer ce qui figure sur le compte avant de modifier. Les chiffres sont le profil enregistré. Ils changent après l’enregistrement de Modifier le profil, pas tant que le formulaire est ouvert."
       },
       "details": {
-        "title": "Détails de l'entreprise",
-        "description": "Champs entreprise, contact et commerciaux. Modifier le profil transforme ceci en formulaire."
+        "title": "Détails de l’entreprise",
+        "description": "Voici les champs entreprise, contact et commercial. Modifier le profil transforme ceci en formulaire afin que vous puissiez les changer. Enregistrer sur ce formulaire écrit le compte. Tant que vous n’enregistrez pas, l’aperçu affiche encore les détails précédents."
       }
     },
     "visits": {
       "header": {
         "title": "Visites",
-        "description": "Consultez les visites déjà enregistrées. Les enregistrements notés sont sous Enregistrements d'appels."
+        "description": "Visites est l’historique des visites que vous avez déjà consignées, plus la commande pour en commencer ou en terminer une. Les enregistrements notés de l’appel lui-même restent sur Enregistrements d’appels, pas sur cette page. Ouvrez une visite passée pour la mettre à jour, ou passez à la carte pour voir où les visites ont eu lieu. Une visite figure dans l’historique une fois qu’elle est terminée et enregistrée."
       },
       "visit-action": {
-        "title": "Démarrer ou terminer une visite",
-        "description": "Cliquez sur Démarrer une visite et choisissez en personne ou téléphone. Pendant une visite, cliquez sur le Terminer la visite rouge pour ajouter des notes et le résultat."
+        "title": "Commencer ou terminer une visite",
+        "description": "Cliquez sur Commencer la visite et choisissez en personne ou par téléphone. Pendant qu’une visite est en cours, la même commande devient le bouton rouge Terminer la visite. Terminer la visite est l’endroit où vous ajoutez des notes et le résultat. La visite reste ouverte tant que vous ne la terminez pas. Commencer une seconde visite n’est pas la façon de clôturer celle qui est en cours."
       },
       "toolbar": {
-        "title": "Filtrer l'historique",
-        "description": "La plage va du 1er de ce mois à aujourd'hui. Changez les dates, la région, le type d'activité, le collègue ou la recherche. Démarrez ou terminez une visite depuis cette ligne."
+        "title": "Filtrer l’historique",
+        "description": "La plage commence au 1er de ce mois jusqu’à aujourd’hui. Changez les dates, la région, le type d’activité, le collègue ou la recherche pour afficher un autre ensemble. Vous pouvez aussi commencer ou terminer une visite depuis cette ligne. La liste et la carte suivent toutes deux le filtre. Effacez-le pour revenir à l’ensemble depuis le début du mois."
       },
       "history-content": {
         "title": "Liste ou carte",
-        "description": "Cliquez sur une ligne pour mettre à jour cette visite. Passez à la carte pour voir où les visites ont eu lieu."
+        "description": "La liste compte une ligne par visite. Cliquez sur une ligne pour mettre à jour cette visite, y compris les notes et le résultat. Passez à la carte pour voir où les visites ont eu lieu pour le même filtre. La carte utilise les visites qui ont un emplacement. Une visite sans coordonnées reste dans la liste."
       }
     },
     "clients": {
       "header": {
         "title": "Clients",
-        "description": "Cliquez sur Ajouter un client pour enregistrer un client de l'organisation."
+        "description": "Clients est le registre des clients de l’organisation. Cliquez sur Ajouter un client pour enregistrer un client, puis retrouvez-le plus tard depuis les cartes. La barre d’outils filtre le registre. Ouvrir une carte affiche la fiche complète. Un client est dans le registre une fois le formulaire d’ajout enregistré."
       },
       "toolbar": {
         "title": "Filtrer et rechercher",
-        "description": "Filtrez par statut et catégorie. Recherchez par nom, e-mail ou téléphone. Cliquez sur X sur un filtre pour l'effacer."
+        "description": "Filtrez par statut et catégorie, et recherchez par nom, e-mail ou téléphone. Les cartes ci-dessous n’affichent que les correspondances. Cliquez sur X sur un filtre pour effacer celui-là sans effacer les autres. La recherche porte sur ces champs de contact, pas sur les notes à l’intérieur de la fiche client."
       },
       "grid": {
-        "title": "Cartes client",
-        "description": "Cliquez sur une carte pour la fiche complète. Cliquez sur Charger plus pour la page suivante."
+        "title": "Cartes clients",
+        "description": "Chaque carte est un client. Cliquez sur une carte pour la fiche complète, où vous pouvez lire et mettre à jour les détails enregistrés. Cliquez sur Charger plus pour récupérer la page suivante lorsque le registre est plus long que ce qui est à l’écran. La carte affiche le client enregistré. Les modifications s’appliquent après que vous les avez enregistrées sur la fiche."
       }
     },
     "settings": {
       "header": {
         "title": "Paramètres",
-        "description": "Profil de l'organisation, apparence, horaires, agences, calendrier, scraping, avis, bannières et qualité des appels."
+        "description": "Paramètres contient le profil de l’organisation, l’apparence, les horaires de travail, les agences, le calendrier, la collecte de prospects, les avis, les bannières et la qualité des appels. Régional est l’endroit où vous choisissez votre langue. Chaque onglet s’enregistre seul, donc une modification sur un onglet ne met pas les autres à jour tant que vous n’enregistrez pas cet onglet."
       },
       "tab-nav": {
         "title": "Sections",
-        "description": "Cliquez sur un onglet pour modifier cette section. Cette visite reste sur l'onglet déjà ouvert."
+        "description": "Cliquez sur un onglet pour modifier cette section. Profil, apparence, horaires, agences, calendrier et les autres onglets ont chacun leurs champs et leur propre enregistrement. Ce parcours ouvre Régional afin que vous voyiez le menu de langue. Les autres sections restent telles que vous les avez laissées jusqu’à ce que vous cliquiez sur leur onglet."
       },
       "active-panel": {
         "title": "Cette section",
-        "description": "Modifiez les champs de l'onglet ouvert. Rien n'est enregistré tant que vous ne cliquez pas sur Enregistrer les modifications."
+        "description": "Voici les champs de l’onglet que vous avez ouvert. Modifiez ce qu’il vous faut, puis utilisez Enregistrer les modifications en bas de la section. Annuler, lorsqu’il est affiché, abandonne les modifications qui ne sont pas encore enregistrées. Changer d’onglet ne conserve pas le texte non enregistré."
       },
       "panel-actions": {
         "title": "Enregistrer ou annuler",
-        "description": "Enregistrer les modifications conserve cette section. Annuler abandonne les modifications non enregistrées."
+        "description": "Enregistrer les modifications n’écrit que cette section. Les autres onglets gardent leur propre bouton d’enregistrement, donc enregistrer ici ne publie pas les modifications que vous avez laissées ouvertes ailleurs. Annuler abandonne les modifications de cette section et rétablit les dernières valeurs enregistrées. Si le bouton reste occupé, la section est déjà en cours d’enregistrement."
+      },
+      "language": {
+        "title": "Votre langue",
+        "description": "Ce menu définit la langue de toute l’application. Auto suit la langue ou le pays de votre appareil. Vous pouvez choisir Anglais, Portugais, Français, Espagnol ou Italien à la place. Le même menu dans l’en-tête utilise ce réglage, donc les pages, les parcours et les boutons changent ensemble."
       }
     },
     "leads": {
       "header": {
         "title": "Prospects",
-        "description": "Créez un prospect, recherchez dans la liste et ouvrez une personne pour le suivi."
+        "description": "Prospects est l’endroit où vous créez une personne à relancer, recherchez dans la liste et l’ouvrez pour appeler ou écrire. Les prospects sont regroupés par propriétaire, ou laissés dans Non assigné. Importer peut en ajouter beaucoup d’un coup depuis une feuille de calcul ou depuis Google Maps. Un prospect que vous créez à la main apparaît dans la liste une fois le formulaire enregistré."
       },
       "create": {
         "title": "Créer un prospect",
-        "description": "Cliquez sur Créer un prospect, remplissez le formulaire, et le nouveau prospect apparaît dans la liste."
+        "description": "Cliquez sur Créer un prospect et remplissez le formulaire. Enregistrez-le et le nouveau prospect apparaît dans la liste, sous vous ou sous Non assigné, selon le propriétaire que vous avez défini. Vous pouvez ouvrir ce prospect ensuite pour l’appeler ou lui écrire. Fermer le formulaire sans enregistrer n’ajoute pas de prospect."
       },
       "toolbar": {
         "title": "Filtrer et rechercher",
-        "description": "La plage de dates commence sur ce mois. Changez les dates, les filtres ou la recherche pour afficher un autre ensemble de prospects."
+        "description": "La plage de dates commence sur ce mois. Changez les dates, les autres filtres ou la recherche pour afficher un autre ensemble de prospects. Les groupes ci-dessous suivent cet ensemble. Effacez les filtres pour revenir à ce mois. La recherche réduit les personnes déjà dans la plage. Elle ne crée pas de prospect."
       },
       "import": {
         "title": "Importer des prospects",
-        "description": "Cliquez sur Importer pour ajouter des prospects depuis une feuille de calcul ou Google Maps. Pour Maps, examinez les lieux et assignez des responsables avant qu'ils n'apparaissent dans cette liste."
+        "description": "Cliquez sur Importer pour ajouter des prospects depuis une feuille de calcul ou depuis Google Maps. Pour Google Maps, vérifiez les lieux et assignez les propriétaires avant qu’ils n’apparaissent dans cette liste. Les lignes que vous ignorez dans cette vérification ne sont pas ajoutées. Un import de feuille de calcul utilise les colonnes que vous associez. Il n’invente pas de propriétaires."
       },
       "list": {
         "title": "Liste des prospects",
-        "description": "Les prospects sont groupés par responsable, ou Non assignés. Cliquez sur une personne pour la développer. Cliquez sur un prospect pour l'ouvrir."
+        "description": "Les prospects sont regroupés par propriétaire, ou par Non assigné lorsque personne ne les possède encore. Cliquez sur une personne pour développer ce groupe et voir chaque prospect en dessous. Cliquez sur un prospect pour l’ouvrir. Les groupes suivent la plage de dates et les filtres ci-dessus."
       },
       "expand": {
         "title": "Développer un groupe",
-        "description": "Cliquez sur cette ligne. Tous les prospects de ce groupe s'ouvrent en dessous."
+        "description": "Cette ligne est un propriétaire, ou Non assigné. Cliquez dessus et chaque prospect de ce groupe s’ouvre en dessous. Cliquez de nouveau pour replier le groupe. Développer n’assigne pas les prospects. Cela ne fait que les afficher."
       },
       "open": {
         "title": "Ouvrir un prospect",
-        "description": "Cliquez sur cette ligne. Le détail du prospect s'ouvre."
+        "description": "Cette ligne est un prospect dans le groupe. Cliquez dessus et le détail du prospect s’ouvre. De là, vous pouvez appeler, écrire ou lire le score. La ligne elle-même reste dans la liste lorsque vous fermez le détail."
       },
       "detail": {
         "title": "Détail du prospect",
-        "description": "Démarrez ou terminez un appel, envoyez un message sur WhatsApp, par e-mail ou SMS, et lisez le score d'appel. Fermez la boîte de dialogue pour revenir à la liste."
+        "description": "Depuis le prospect, vous pouvez commencer ou terminer un appel, lui écrire sur WhatsApp, par e-mail ou par SMS, et lire le score de l’appel. Utilisez les actions de contact pour le canal que vous voulez vraiment. Fermez la boîte de dialogue pour revenir à la liste. Un appel que vous commencez ici est noté avec les autres appels. Le journal des visites reste sur Visites."
       }
     },
     "staff": {
       "header": {
-        "title": "Personnel",
-        "description": "Voyez qui est présent ou absent aujourd'hui."
+        "title": "Équipe",
+        "description": "Équipe indique qui est présent ou absent aujourd’hui, et c’est là que vous ouvrez la fiche d’une personne. Vous pouvez ajouter un collègue, lui envoyer un lien d’admission et filtrer les cartes par rôle, agence ou pays. L’horloge sur une carte, lorsqu’elle est affichée, ouvre l’historique de présence de cette personne. L’export des déplacements télécharge un rapport pour les dates que vous choisissez."
       },
       "add": {
         "title": "Ajouter un collègue",
-        "description": "Ajouter un utilisateur crée un compte collaborateur. Envoyer le lien d'intégration leur permet de terminer l'onboarding eux-mêmes."
+        "description": "Ajouter un utilisateur crée un compte collaborateur que vous remplissez. Envoyer le lien d’admission lui permet de terminer l’admission depuis le lien que vous envoyez. Utilisez Ajouter un utilisateur lorsque vous avez déjà ses détails. Utilisez le lien d’admission lorsqu’il doit remplir le formulaire. La personne apparaît dans la grille une fois le compte créé."
       },
       "toolbar": {
         "title": "Filtrer et rechercher",
-        "description": "Filtrez par statut, rôle, effectif, agence ou pays. Recherchez par nom, e-mail ou ID RH."
+        "description": "Filtrez par statut, rôle, type de personnel, agence ou pays. Recherchez par nom, e-mail ou ID RH. Les cartes n’affichent que les personnes qui correspondent. Effacez un filtre pour élargir de nouveau la grille. La recherche ne parcourt pas les notes de présence."
       },
       "grid": {
         "title": "Cartes collègues",
-        "description": "Cliquez sur une carte pour le détail de cette personne. Cliquez sur l'horloge, lorsqu'elle est affichée, pour l'historique de présence."
+        "description": "Chaque carte est une personne, avec le fait qu’elle soit présente ou absente aujourd’hui. Cliquez sur une carte pour le détail de cette personne. Cliquez sur l’horloge, lorsqu’elle est affichée, pour son historique de présence. La carte utilise la présence du jour. Ce n’est pas le mois complet tant que vous n’ouvrez pas l’historique."
       },
       "travel": {
         "title": "Rapport de déplacements",
-        "description": "Téléchargez le classeur Excel de cette personne ou un PDF jour par jour pour les dates choisies."
+        "description": "Téléchargez le classeur Excel de cette personne ou un PDF jour par jour pour les dates que vous choisissez. Le fichier couvre la plage que vous choisissez, pas automatiquement toute la période. Utilisez-le lorsque vous avez besoin d’un relevé des déplacements de cette personne. Le téléchargement commence après que vous avez confirmé les dates."
       }
     },
     "planning": {
       "header": {
         "title": "Planification",
-        "description": "Tâches, travail du jour et itinéraires de la journée."
+        "description": "Planification contient les tâches, ce qui est dû aujourd’hui et les tournées du jour. Créez une tâche et elle s’affiche dans Toutes les tâches. Ma journée est le travail dû aujourd’hui. Tournées est la journée terrain planifiée, construite à partir de l’import ERP de la nuit. Le bouton d’info explique comment ces tournées sont réservées."
       },
       "create": {
         "title": "Créer une tâche",
-        "description": "Cliquez sur Créer une tâche, remplissez-la et assignez-la. Elle apparaît dans Toutes les tâches."
+        "description": "Cliquez sur Créer une tâche, remplissez-la et assignez-la. La tâche apparaît dans Toutes les tâches après l’enregistrement. Si elle est due aujourd’hui, elle appartient aussi à Ma journée. Fermer le formulaire sans enregistrer n’ajoute pas la tâche."
       },
       "tabs": {
-        "title": "Toutes les tâches, Ma journée, Itinéraires",
-        "description": "Toutes les tâches est la liste complète. Ma journée est ce qui est dû aujourd'hui. Itinéraires est la journée terrain planifiée."
+        "title": "Toutes les tâches, Ma journée, Tournées",
+        "description": "Toutes les tâches est la liste complète que vous pouvez filtrer. Ma journée est ce qui est dû aujourd’hui, afin que vous puissiez traiter cet ensemble sans reconstruire le filtre. Tournées est la journée terrain planifiée pour la date que vous choisissez. Changer d’onglet ne supprime pas les tâches. Cela change l’ensemble que vous consultez."
       },
       "reminders": {
         "title": "Rappels",
-        "description": "Dans Toutes les tâches, voici ce qui est dû aujourd'hui, en retard et à venir. Ouvrez un élément pour le traiter."
+        "description": "Dans Toutes les tâches, ceci regroupe ce qui est dû aujourd’hui, ce qui est en retard et ce qui est à venir. Ouvrez un élément pour le traiter, mettre à jour le statut ou changer le détail. Les comptes suivent les tâches de la liste actuelle. Ma journée et Tournées n’utilisent pas cette même bande de rappels."
       },
       "filters": {
         "title": "Filtrer les tâches",
-        "description": "Définissez date, statut, priorité, assigné, client, agence, en retard seulement ou recherche. La liste ci-dessous se met à jour."
+        "description": "Définissez la date, le statut, la priorité, le responsable, le client, l’agence, En retard uniquement, ou la recherche. La liste ci-dessous se met à jour pour correspondre. Utilisez En retard uniquement lorsque vous voulez le travail en retard à part. Effacez les filtres pour revoir la liste plus large. Les filtres masquent des lignes. Ils ne terminent pas une tâche."
       },
       "list": {
         "title": "Liste des tâches",
-        "description": "Cliquez sur une tâche pour l'ouvrir et mettre à jour le statut ou les détails."
+        "description": "Chaque ligne est une tâche de l’ensemble filtré. Cliquez sur une tâche pour l’ouvrir et mettre à jour le statut ou les détails. La ligne affiche la tâche enregistrée. Les modifications apparaissent dans la liste après que vous les avez enregistrées sur la tâche. La pagination sous la liste parcourt le reste de l’ensemble."
       },
       "pagination": {
         "title": "Pages",
-        "description": "Changez le nombre de lignes par page, ou passez à la page suivante."
+        "description": "Changez le nombre de lignes par page lorsque vous voulez une liste plus longue ou plus courte. Passez à la page suivante pour voir le reste des tâches filtrées. La taille de page ne change pas les tâches qui correspondent au filtre. Elle ne change que le nombre chargé à la fois."
       },
       "routes": {
-        "title": "Itinéraires",
-        "description": "Choisissez le jour, cliquez sur Recalculer pour reconstruire les itinéraires, ou ouvrez Vue d'ensemble des concurrents pour la carte."
+        "title": "Tournées",
+        "description": "Choisissez le jour où les visites ont été planifiées. Cliquez sur Recalculer les tournées pour reconstruire les tournées de ce jour lorsque les arrêts doivent être planifiés de nouveau. Ouvrez Vue de la concurrence pour la carte du même monde, y compris les agences et les concurrents. Une journée vide signifie en général que vous avez choisi une date sans arrêts planifiés, ou que l’agence n’a pas de coordonnées."
       }
     },
     "pipeline": {
       "header": {
         "title": "Pipeline",
-        "description": "Objectifs, devis, prospects et résultats de visites pour la période que vous pouvez voir."
+        "description": "Pipeline rassemble les objectifs, les devis, les prospects et les résultats de visite dans une seule vue pour la période que vous pouvez voir. Ce que vous voyez suit vos accès, donc une vue d’équipe et une vue d’organisation ne sont pas le même ensemble. Utilisez les sections ci-dessous pour lire chaque partie. Cette page résume. Créer un prospect ou une visite se fait toujours sur ces pages."
       },
       "targets": {
         "title": "Objectifs",
-        "description": "Progression sur les ventes, prospects, pointages d'entrée et appels pour la période d'objectifs actuelle."
+        "description": "Ce bloc est l’avancement des ventes, des prospects, des check-ins et des appels pour la période d’objectif en cours. Comparez ce qui a été fixé avec ce qui a été enregistré jusqu’ici. La période est la période d’objectif, qui peut ne pas correspondre à une plage personnalisée utilisée ailleurs. Ouvrez Rapports lorsque vous avez besoin du tableau complet des objectifs."
       },
       "quotations": {
         "title": "Devis",
-        "description": "Changez la fenêtre de dates ERP pour charger les lignes de devis. Comparez-les aux devis LORO de la même période."
+        "description": "Changez la fenêtre de dates ERP pour charger les lignes de devis de cette plage. Comparez-les aux devis LORO de la même période. La fenêtre contrôle les lignes qui se chargent. Un devis hors de la fenêtre reste hors de cette comparaison tant que vous n’élargissez pas les dates."
       },
       "leads": {
         "title": "Prospects",
-        "description": "Compteurs, valeur du pipeline et valeur des devis issus des visites. Ouvrez un statut pour voir la répartition sur cette plage."
+        "description": "Voici les comptes, la valeur du pipeline et la valeur des devis issus des visites de la plage. Ouvrez un statut pour voir la répartition de ce statut. Les chiffres suivent les visites que vous pouvez voir, pas chaque prospect de l’organisation. Utilisez la page Prospects pour ouvrir et traiter une seule personne."
       },
       "visits": {
         "title": "Visites",
-        "description": "Totaux de pointage de sortie sur cette plage : visites, ventes, devis et valeurs."
+        "description": "Voici les totaux de pointage de sortie pour cette plage : visites, ventes, devis et valeurs. Ils résument les visites qui ont été clôturées, pas les visites encore ouvertes. Utilisez la page Visites pour mettre à jour une seule visite ou la voir sur la carte. Les totaux suivent la période et les accès de cette vue."
       }
     },
     "dashboard-attendance": {
       "clock": {
-        "title": "Pointer l'entrée et la sortie",
-        "description": "Cliquez ici pour démarrer votre poste, prendre une pause ou le terminer. Le pointage d'entrée demande bureau ou télétravail. Le pulse peut demander un court check-in après un pointage d'entrée ou de sortie."
+        "title": "Pointer l’arrivée et le départ",
+        "description": "Cliquez ici pour commencer votre service, prendre une pause ou le terminer. Le pointage d’arrivée demande si vous êtes au bureau ou en télétravail. Pulse peut poser un court pointage après votre arrivée ou votre départ. La journée reste ouverte tant que vous ne terminez pas le service. Une pause ne vous fait pas pointer le départ."
       },
       "variablePay": {
         "title": "Rémunération variable",
-        "description": "Paiement supplémentaire en plus de la commission ce mois-ci. Il montre quels seuils sont ouverts, où vous en êtes par rapport au maximum, et ce qu'il reste."
+        "description": "Il s’agit d’un complément de paie en plus de la commission du mois. Il indique quels seuils sont ouverts, à quelle distance vous êtes du maximum et ce qu’il reste. Les seuils suivent les règles de ce cycle, donc un seuil fermé reste fermé tant que sa condition n’est pas remplie. Le montant est une lecture de l’avancement. Ce n’est pas un bulletin de paie."
       },
       "bonus": {
-        "title": "Prime de fin d'année",
-        "description": "Le statut de votre prime de fin d'année pour le cycle en cours."
+        "title": "Prime de fin d’année",
+        "description": "Voici le statut de votre prime de fin d’année pour le cycle en cours. Il indique où en est la prime, pas un paiement déjà effectué. Le cycle est l’année de prime, distincte du mois de présence ci-dessous. Ouvrez-le lorsque vous avez besoin du statut. La paie émet toujours le bulletin."
       },
       "month": {
         "title": "Changer de mois",
-        "description": "Ouvrez ce menu pour basculer parmi les trois derniers mois."
+        "description": "Ouvrez ce menu pour passer d’un mois à l’autre parmi les trois derniers. La liste de présence ci-dessous suit le mois que vous choisissez. Aujourd’hui reste sur la commande de pointage. Changer de mois ne change pas le service que vous avez ouvert. Cela ne change que l’enregistrement que vous lisez."
       },
       "logs": {
         "title": "Voir les journaux",
-        "description": "Cliquez sur Voir les journaux pour le registre de présence jour par jour."
+        "description": "Cliquez sur Voir les journaux pour l’enregistrement de présence jour par jour du mois que vous avez sélectionné. Utilisez-le lorsque les marques du résumé ne suffisent pas et que vous avez besoin des heures. Le journal suit ce mois. Il n’inclut pas un mois en dehors des trois que vous pouvez sélectionner ici."
       },
       "list": {
         "title": "Ce mois-ci",
-        "description": "Chaque jour est marqué présent, manqué ou encore à venir."
+        "description": "Chaque jour du mois sélectionné est marqué présent, manqué ou encore à venir. Présent signifie qu’un service a été enregistré. Manqué signifie que le jour est passé sans service. Les jours encore à venir n’ont pas eu lieu, ce ne sont donc pas des absences. Ouvrez Voir les journaux lorsque vous avez besoin des heures derrière une marque."
       }
     },
     "calls": {
       "header": {
-        "title": "Enregistrements d'appels",
-        "description": "Les appels PBX (Linkus ou téléphone de bureau) et les appels LORO dans l'application sont listés ici avec score et statut de transcription. Les visites restent sur la page Visites."
+        "title": "Enregistrements d’appels",
+        "description": "Cette liste contient les appels PBX, depuis Linkus ou un téléphone de bureau, et les appels LORO dans l’application. Chaque ligne peut afficher un score et indiquer si une transcription est prête. Les visites restent sur la page Visites. Une visite est le relevé terrain. Un enregistrement est l’audio de l’appel et son score."
       },
       "filters": {
         "title": "Filtrer les enregistrements",
-        "description": "La plage va de ce mois à aujourd'hui. Changez date, statut, direction, agence ou recherche pour restreindre la liste."
+        "description": "La plage commence ce mois-ci jusqu’à aujourd’hui. Changez la date, le statut, le sens, l’agence ou la recherche pour réduire la liste. Le sens sépare les appels entrants et sortants. Le tableau n’affiche que les lignes qui correspondent. Effacez les filtres pour revenir à la liste depuis le début du mois."
       },
       "list": {
         "title": "Ouvrir un enregistrement",
-        "description": "Cliquez sur une ligne pour la transcription, le score et l'audio."
+        "description": "Cliquez sur une ligne pour la transcription, le score et l’audio. Lisez l’audio depuis le détail lorsque vous devez entendre l’appel. Le score est le résultat enregistré pour cet enregistrement. Fermer le détail vous ramène à la liste filtrée."
       }
     },
     "reports": {
       "header": {
         "title": "Rapports",
-        "description": "Objectifs, politique, qualité des appels, tâches, activité des prospects et activité pour la période que votre accès permet."
+        "description": "Rapports couvre les objectifs, la politique, la qualité des appels, les tâches, l’activité des prospects et Insights pour la période que vos accès permettent. Chaque onglet est une coupe différente de cette période. Vos accès décident si vous vous voyez, votre équipe ou l’organisation. Changer d’onglet ne change pas les enregistrements sous-jacents sur Prospects, Visites ou Planification."
       },
       "tabs": {
-        "title": "Onglets de rapport",
-        "description": "Objectifs sont les buts. Politique est la conformité. Qualité des appels sont les appels notés. Insights sont les regroupements d'activité. Tâches et planification compare les visites prévues à ce qui a été fait. Activité des prospects sont les prospects importés par statut pour chaque personne."
+        "title": "Onglets de rapports",
+        "description": "Objectifs est le tableau des buts. Politique est le score de conformité des visites et des appels. Qualité des appels correspond aux appels notés. Insights regroupe l’activité. Tâches et planification compare les visites planifiées avec ce qui a été fait. Activité des prospects correspond aux prospects importés par statut pour chaque personne. Ce parcours ouvre chaque onglet. La plage de dates reste avec l’onglet sur lequel vous êtes."
+      },
+      "targets": {
+        "title": "Objectifs",
+        "description": "Cet onglet est le tableau des buts pour la période que vos accès permettent. Recherchez, filtrez et exportez les lignes. Chaque ligne est l’objectif, l’avancement et la situation de politique d’une personne. Ouvrez une ligne pour le détail. Les chiffres suivent la plage de dates et les agences que vous pouvez voir."
+      },
+      "policy": {
+        "title": "Politique",
+        "description": "Politique note les visites, les appels et les autres règles pour un mois calendaire ou une plage personnalisée. Les cartes résument la période. Le tableau compte une ligne par personne, et vous pouvez trier, paginer et télécharger un CSV. Une plage trop longue, ou un mois encore ouvert, est signalée sur la page. Finaliser un mois est limité aux personnes qui gèrent l’organisation."
       },
       "callQuality": {
         "title": "Qualité des appels",
-        "description": "Classement, entonnoir et notes de coaching pour les appels notés sur cette plage."
+        "description": "Qualité des appels est le classement, l’entonnoir et les notes de coaching pour les appels notés de cette plage. Utilisez-le pour voir qui obtient de bons scores et où les appels sortent de l’entonnoir. Les notes servent au coaching. Elles ne remplacent pas l’enregistrement, qui reste sur Enregistrements d’appels. L’ensemble suit la plage du rapport et les personnes que vous pouvez voir."
       },
       "insights": {
         "title": "Insights",
-        "description": "Regroupements de travail, indicateurs et où est allé le temps sur la même plage."
+        "description": "Insights regroupe le travail de cette plage : groupes d’activité, signaux et répartition du temps. Utilisez-le pour voir des tendances, pas pour modifier une seule visite ou tâche. Un signal est une invitation à regarder de plus près. Il ne change pas l’enregistrement sous-jacent. La même plage alimente les autres onglets de rapport."
+      },
+      "tasks": {
+        "title": "Tâches et planification",
+        "description": "Cet onglet compare les visites planifiées avec ce qui a réellement été fait dans la même plage. Utilisez-le pour voir quels arrêts planifiés ont été terminés, manqués ou encore ouverts. Les chiffres suivent les dates du rapport et les personnes que vous pouvez voir. Il ne remplace pas Planification, où vous créez et modifiez les tâches."
+      },
+      "leadsActivity": {
+        "title": "Activité des prospects",
+        "description": "Les prospects importés sont regroupés par statut pour chaque personne de cette plage. Utilisez-le pour voir qui fait avancer les prospects et quels statuts sont bloqués. Ouvrez la page Prospects pour créer, importer ou traiter un seul prospect. Cet onglet est la synthèse, pas la liste de travail."
       }
     },
     "merchandise": {
       "header": {
         "title": "Merchandising",
-        "description": "Photos et notes terrain, avec un statut de revue sur chaque journal."
+        "description": "Merchandising est le journal des photos terrain et des notes, avec un statut de révision sur chaque entrée. Une nouvelle entrée reste en révision tant qu’elle n’est pas publiée. Filtrez la liste, ou ouvrez une ligne pour la photo complète et les actions de révision. La photo est jointe lorsque vous créez l’entrée. La publication est une étape ultérieure."
       },
       "create": {
-        "title": "Nouveau merchandising",
-        "description": "Cliquez sur Nouveau merchandising. Joignez une photo, nommez le client et ajoutez des commentaires. Le journal reste en revue jusqu'à publication."
+        "title": "Nouvelle marchandise",
+        "description": "Cliquez sur Nouvelle marchandise. Joignez une photo, nommez le client et ajoutez des commentaires, puis enregistrez. L’entrée reste en révision tant qu’elle n’est pas publiée, elle n’est donc pas traitée comme définitive. Vous pouvez l’ouvrir depuis la liste pour la revoir. Fermer le formulaire sans enregistrer n’ajoute pas d’entrée."
       },
       "filters": {
         "title": "Filtrer les journaux",
-        "description": "Filtrez par date, taille de page, agence, collègue, statut ou recherche."
+        "description": "Filtrez par date, taille de page, agence, collègue, statut ou recherche. La liste n’affiche que les entrées qui correspondent, y compris celles encore en révision si ce statut est inclus. Effacez un filtre pour élargir la liste. La taille de page change le nombre de lignes chargées, pas les entrées qui existent."
       },
       "list": {
         "title": "Ouvrir un journal",
-        "description": "Cliquez sur une ligne pour la photo complète et les actions de revue."
+        "description": "Cliquez sur une ligne pour la photo complète et les actions de révision. De là, vous pouvez lire les notes et faire avancer la révision, y compris publier lorsque vous y êtes autorisé. Le statut de la ligne se met à jour une fois cette action enregistrée. La photo est celle qui est jointe à l’entrée."
       }
     },
     "assets": {
       "header": {
         "title": "Actifs",
-        "description": "Votre équipement et vos véhicules liés, ou l'inventaire complet de l'organisation si vous le gérez. Les managers changent cette portée dans les filtres."
+        "description": "Actifs liste le matériel et les véhicules. Vous voyez les éléments qui vous sont liés, ou l’inventaire de toute l’organisation si vous le gérez. Les responsables changent cette portée dans les filtres. Ouvrez une carte pour les détails d’achat et d’assurance, ou ajoutez un actif lorsqu’un élément nouveau est remis. Le registre est l’inventaire enregistré, pas une liste de souhaits."
       },
       "add": {
         "title": "Ajouter un actif",
-        "description": "Cliquez sur Ajouter un actif. Enregistrez l'élément, qui le possède et à quelle agence il appartient."
+        "description": "Cliquez sur Ajouter un actif. Saisissez l’élément, qui en est propriétaire et à quelle agence il appartient, puis enregistrez. La carte apparaît dans la grille de cette portée. L’actif n’est pas dans l’inventaire tant que le formulaire n’est pas enregistré."
       },
       "filters": {
-        "title": "Filtrer l'inventaire",
-        "description": "Filtrez par date, agence, propriétaire, catégorie ou recherche. La taille de page sous la grille définit combien de cartes se chargent."
+        "title": "Filtrer l’inventaire",
+        "description": "Filtrez par date, agence, propriétaire, catégorie ou recherche. Les responsables peuvent aussi basculer entre leurs propres éléments liés et l’inventaire plus large. La taille de page sous la grille définit combien de cartes se chargent. Effacez les filtres pour voir l’ensemble plus large que vos accès permettent."
       },
       "list": {
         "title": "Ouvrir un actif",
-        "description": "Cliquez sur une carte pour les détails d'achat et d'assurance, ou pour le modifier et le supprimer."
+        "description": "Cliquez sur une carte pour les détails d’achat et d’assurance. Lorsque vous gérez l’élément, vous pouvez le modifier ou le supprimer de là. Supprimer le retire de l’inventaire. Les champs d’assurance et d’achat sont ce qui a été enregistré sur l’actif, pas une consultation de police en direct."
       }
     },
     "performance": {
       "header": {
         "title": "Performance",
-        "description": "Ventes pour les pays, agences et dates que vous pouvez voir. Le titre passe à État consolidé lorsque cette vue est active."
+        "description": "Performance correspond aux ventes pour les pays, les agences et les dates que vous pouvez voir. Le titre passe à État consolidé lorsque cette vue est activée, car la page affiche alors le compte de résultat au lieu du rapport de performance. Définissez la plage et les filtres avant de lire les graphiques. Actualiser récupère les derniers chiffres depuis le serveur."
       },
       "filters": {
         "title": "Dates et filtres",
-        "description": "Définissez la plage de dates. Ouvrez les filtres pour pays, agence et catégorie. Cliquez sur actualiser pour récupérer les derniers chiffres."
+        "description": "Définissez d’abord la plage de dates. Ouvrez les filtres pour le pays, l’agence et la catégorie lorsque vous avez besoin d’une coupe plus petite. Cliquez sur actualiser pour récupérer les derniers chiffres de cette sélection. La synthèse et les graphiques suivent les mêmes filtres. Une agence à laquelle vous n’avez pas accès reste hors de la liste."
       },
       "consolidated": {
         "title": "État consolidé",
-        "description": "Activez ceci pour le compte de résultat entre pays et agences. Désactivez pour revenir au rapport de performance."
+        "description": "Activez ceci pour le compte de résultat sur les pays et les agences du filtre. Désactivez-le pour revenir au rapport de performance, avec l’objectif, la marge brute et les graphiques. La plage de dates reste en place dans les deux cas. L’état est une vue de la même période, pas un autre jeu de livres que vous modifiez ici."
       },
       "target": {
         "title": "Objectif et marge brute",
-        "description": "Chiffre d'affaires par rapport à l'objectif, et marge brute, pour cette plage."
+        "description": "Ces chiffres sont le chiffre d’affaires par rapport à l’objectif, et la marge brute, pour la plage et les filtres que vous avez définis. Utilisez-les comme titre avant de lire les graphiques. Ils suivent les chiffres actualisés. Changer un filtre sans actualiser peut laisser le chargement précédent à l’écran jusqu’à ce que vous actualisiez."
       },
       "charts": {
         "title": "Graphiques",
-        "description": "Catégorie, agence, mix de paiements, produits, commerciaux et ventes horaires pour les filtres que vous avez définis."
+        "description": "Les graphiques répartissent la même sélection en catégorie, agence, modes de paiement, produits, commerciaux et ventes horaires. Utilisez-les pour voir où se situe le chiffre d’affaires, pas pour modifier une transaction. Ils suivent les filtres et la dernière actualisation. État consolidé remplace cette vue tant qu’il est activé."
       }
     },
     "wellbeing": {
       "header": {
         "title": "Bien-être",
-        "description": "Check-ins d'humeur, suivis, et comment l'humeur s'aligne avec la performance."
+        "description": "Bien-être lit les relevés d’humeur, les suivis et la façon dont l’humeur s’aligne sur la performance. Aujourd’hui est la journée en direct. Insights, Exécutif et Corrélations utilisent la plage de dates et l’agence que vous définissez. Ces vues sont des estimations pour vous aider à remarquer des personnes. Ce n’est pas un diagnostic et elles ne prouvent pas une cause."
       },
       "filters": {
         "title": "Date et agence",
-        "description": "Insights, Exécutif et Corrélations utilisent cette plage de dates et cette agence. Aujourd'hui ignore la plage."
+        "description": "Insights, Exécutif et Corrélations utilisent cette plage de dates et cette agence. Changez-les avant de lire ces onglets, car les graphiques et les constats suivent la sélection. Aujourd’hui ignore la plage et reste sur la journée en direct. Une agence hors de vos accès n’est pas dans la liste."
       },
       "tabs": {
-        "title": "Aujourd'hui, Insights, Exécutif, Corrélations",
-        "description": "Aujourd'hui sont les check-ins en direct. Insights résume la plage. Exécutif sont les graphiques d'indice. Corrélations compare l'humeur à la performance. Ce sont des estimations, pas des causes."
+        "title": "Aujourd’hui, Insights, Exécutif, Corrélations",
+        "description": "Aujourd’hui correspond aux relevés en direct et aux personnes qui ont besoin de soutien. Insights résume la plage. Exécutif correspond aux graphiques d’indice. Corrélations compare l’humeur et la performance. Admin, lorsque vous pouvez le voir, est l’endroit où les suivis sont enregistrés. Ce sont des estimations, pas des causes, et elles ne remplacent pas une conversation avec la personne."
       },
       "today": {
-        "title": "Aujourd'hui",
-        "description": "KPI, comparaison d'agences et listes nominatives de personnes qui ont besoin de soutien ou d'un suivi."
+        "title": "Aujourd’hui",
+        "description": "Aujourd’hui affiche les indicateurs en direct, une comparaison des agences et des listes nommées de personnes qui ont besoin de soutien ou d’un suivi. Les chiffres concernent cette journée, pas la plage de la barre d’outils. Ouvrez une personne lorsque vous devez agir. L’enregistrement du résultat se fait dans Admin, pas sur cette liste."
+      },
+      "insights": {
+        "title": "Insights",
+        "description": "Insights résume l’humeur pour la plage de dates et l’agence que vous avez définies ci-dessus. Chaque carte est un constat, marqué positif, à surveiller ou action requise. La pastille indique si le texte vient du modèle ou des règles fixes. Ce sont des synthèses des relevés, pas un diagnostic."
       },
       "executive": {
         "title": "Indice exécutif",
-        "description": "Chaque graphique est un indice agrégé pour la plage et l'agence que vous avez définies."
+        "description": "Chaque graphique est un indice agrégé pour la plage et l’agence que vous avez définies. Lisez-les ensemble pour voir la forme de la période, pas l’histoire d’une seule personne. L’indice est un score de synthèse. Il ne nomme pas qui a besoin d’un suivi. Utilisez Aujourd’hui ou Admin pour les personnes nommées."
+      },
+      "correlations": {
+        "title": "Corrélations",
+        "description": "Corrélations compare l’humeur et la performance pour la même plage et la même agence. Chaque ligne est un constat, avec l’ampleur de l’écart, le nombre de personnes couvertes et le degré de confiance de la comparaison. Un écart plus grand n’est pas une cause. Traitez le tableau comme une invitation à regarder de plus près, pas comme une preuve."
+      },
+      "admin": {
+        "title": "Suivi",
+        "description": "Admin liste les personnes qui ont demandé du soutien ou qui sont signalées comme présentant un risque plus élevé. Ouvrez une personne pour enregistrer comment vous avez fait le suivi. La note reste sur cette page pour le jour sélectionné. Utilisez-la après leur avoir parlé. Elle ne remplace pas un avertissement formel ni une demande de congé."
       }
     },
     "visualiser": {
       "header": {
-        "title": "Vue d'ensemble des concurrents",
-        "description": "Recherchez sur la carte ou suivez l'itinéraire d'un commercial. Ouvrez Simuler pour modéliser une zone de chalandise."
+        "title": "Vue de la concurrence",
+        "description": "Vue de la concurrence est la carte des agences, du siège, des concurrents et des clients. Recherchez sur la carte ou suivez l’itinéraire d’un commercial. Ouvrez Simuler pour modéliser une zone de chalandise et voir ce que la zone pourrait supporter. Les géorepérages que vous avez créés sont aussi dessinés ici. La carte lit les emplacements enregistrés. Elle ne modifie pas une fiche client."
       },
       "tools": {
-        "title": "Outils de carte",
-        "description": "Le résumé compte les magasins concurrents et le chiffre d'affaires mensuel modélisé. Prix du carburant charge les derniers prix et conserve les prix stockés quand rien n'a changé. Géocoder remplit les adresses manquantes. Exporter télécharge la simulation. L'icône d'info explique le calcul. Simuler ouvre la boîte de dialogue de simulation."
+        "title": "Outils de la carte",
+        "description": "Résumé compte les magasins concurrents et le chiffre d’affaires mensuel modélisé. Prix de l’essence charge les derniers prix du carburant et conserve les prix stockés lorsque rien n’a changé. Géocoder complète les adresses manquantes afin que les épingles puissent être placées. Exporter télécharge la simulation. L’icône d’information explique les calculs. Simuler ouvre la boîte de dialogue de simulation, et le résultat reste un modèle tant que vous ne l’exportez pas ou ne l’enregistrez pas depuis cette boîte de dialogue."
       },
       "map": {
         "title": "La carte",
-        "description": "Les épingles sont les agences, le siège, les concurrents et les clients."
+        "description": "Les épingles sont les agences, le siège, les concurrents et les clients. Sélectionnez une épingle pour lire ce qu’elle est. Une épingle manquante signifie en général que l’adresse n’a pas encore été géocodée. Utilisez Géocoder dans les outils lorsque les adresses sont vides. Les itinéraires et les simulations se dessinent par-dessus ces épingles. Ils ne déplacent pas l’adresse enregistrée d’un client."
       }
     }
   },

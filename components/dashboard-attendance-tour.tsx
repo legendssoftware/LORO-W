@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import { useAuth } from '@clerk/nextjs';
 import { usePathname } from 'next/navigation';
 import { useTranslation } from 'react-i18next';
+import { tourButtonLabels } from '@/lib/use-monthly-page-tour';
 import type { TFunction } from 'i18next';
 import { driver, type DriveStep, type Driver } from 'driver.js';
 import 'driver.js/dist/driver.css';
@@ -19,7 +20,7 @@ import { usePerformanceWarningPendingSafe } from '@/contexts/performance-warning
 const DRIVER_TOUR_POPOVER_CLASS = 'loro-driver-tour';
 
 const SEL_ATTENDANCE = '[data-tour="attendance-button"]';
-const SEL_VARIABLE_REM = '[data-tour="variable-rem-section"]';
+const SEL_VARIABLE_REM = '[data-tour="home-prr-benefits"]';
 const SEL_BONUS = '[data-tour="year-end-bonus-section"]';
 const SEL_SECTION = '[data-tour="attendance-section"]';
 const SEL_MONTH = '[data-tour="attendance-month-selector"]';
@@ -104,6 +105,7 @@ function areTourTargetsReady(): boolean {
 
 export function DashboardAttendanceTour() {
   const { t } = useTranslation('screens');
+  const { t: tCommon } = useTranslation('common');
   const pathname = usePathname();
   const { isLoaded, isSignedIn, userId } = useAuth();
   const blockTours = usePerformanceWarningPendingSafe().deferToursAndSalesBenchmarks;
@@ -180,9 +182,7 @@ export function DashboardAttendanceTour() {
           smoothScroll: true,
           allowClose: true,
           popoverClass: DRIVER_TOUR_POPOVER_CLASS,
-          nextBtnText: 'Next',
-          prevBtnText: 'Previous',
-          doneBtnText: 'Done',
+          ...tourButtonLabels(tCommon),
           steps,
           onHighlighted: (_element, _step, { driver: activeDriver }) => {
             const activeIndex = activeDriver.getActiveIndex() ?? 0;

@@ -864,8 +864,8 @@
       "title": "Planning",
       "description": "Plan field work, routes, and follow-ups in one place.",
       "routeTitle": "How route planning works",
-      "routeNote": "Each night the ERP import matches customers to the rep with the same sales code, then books weekday visits for the next four weeks. Each day stays in one nearby area (about 40 km), up to 10 clients, in driving order. A fuller area continues the next day before a farther area starts. Clients who already have a visit from today through that window stay as they are. Clients without a map address are skipped. All tasks includes those upcoming days. Open Routes and pick the day the visits were planned.",
-      "routeEmpty": "No routes for this day. Pick the day the visits were planned. Each rep needs a branch with coordinates, and that day’s stops are saved as one route."
+      "routeNote": "Each night the ERP import matches customers to the rep with the same sales code, then books weekday visits for the next four weeks. Each day stays in one nearby area (about 40 km), up to 10 clients, in driving order. A fuller area continues the next day before a farther area starts. Clients who already have a visit from today through that window stay as they are. Clients without a map address are skipped, so add a location before you expect them on a route. All tasks includes those upcoming days. Open Routes, pick the day the visits were planned, and use Recalculate when that day needs to be rebuilt. The info button on this page opens the same explanation.",
+      "routeEmpty": "No routes for this day. Pick the day the visits were planned, not an empty day further ahead. Each rep needs a branch with coordinates, and that day’s stops are saved as one route. If the list stays empty, check the branch pin and that the nightly ERP import has run."
     },
     "pipeline": {
       "title": "Pipeline",
@@ -974,7 +974,7 @@
     },
     "orders": {
       "title": "Orders",
-      "description": "Track quotations and orders by status"
+      "description": "View orders you placed, open one for the detail, and edit or cancel it while it is still open."
     },
     "store": {
       "title": "Store",
@@ -994,691 +994,715 @@
     "leave": {
       "header": {
         "title": "Leave",
-        "description": "Request time off, filter the inbox, then approve, reject, or cancel a request."
+        "description": "This inbox is where time off is requested and decided. You can ask for leave, then follow it until someone approves, rejects, or cancels it. Managers see the requests they are allowed to decide. Your own requests stay visible even when you only manage your own leave."
       },
       "actions": {
         "title": "Request leave",
-        "description": "Click Request leave. Choose the type and dates, then send it for a decision."
+        "description": "Click Request leave to start a new request. Choose the leave type and the dates, then send it for a decision. The request appears in this inbox as soon as it is sent. It is not approved until someone with access acts on it."
       },
       "filters": {
         "title": "Filter the inbox",
-        "description": "Narrow by status, person, and date range. Your own requests stay in view when you only see your leave."
+        "description": "Narrow the list by status, person, and date range. Use this when the inbox is long and you only want one kind of request. Clearing a filter brings the wider list back. If you only see your own leave, your requests stay in view."
       },
       "content": {
         "title": "Open a request",
-        "description": "The chart counts requests by status. Click a row to approve, reject, or cancel it."
+        "description": "The chart counts requests by status so you can see the mix before you open a row. Click a row to read the dates and the reason. From there you can approve, reject, or cancel, depending on your access. The status on the row updates after the decision is saved."
       }
     },
     "warnings": {
       "header": {
         "title": "Warnings",
-        "description": "Organisation warnings. A warning created on a staff profile also appears here."
+        "description": "This is the organisation list of formal warnings. A warning created on a staff profile also appears here, so you do not have to open each person to find it. Use the list to review what was recorded and who it concerns. Removing a warning here removes it from the shared list."
       },
       "actions": {
         "title": "Issue warning",
-        "description": "Click Issue warning. Record the person, the reason, and the status."
+        "description": "Click Issue warning to record a new warning. Choose the person, write the reason, and set the status. The warning is saved to this list and also shows on that person's staff profile. Only people who can manage warnings see this button."
       },
       "filters": {
         "title": "Filter by status",
-        "description": "Show every warning, or only one status."
+        "description": "Show every warning, or keep only one status. The list below updates as soon as you change the filter. Use All when you want the full history again. Status here is the warning's own state, not the person's attendance."
       },
       "content": {
         "title": "Review a warning",
-        "description": "Click a row to read it or remove it."
+        "description": "Each row is one warning, with the person and the reason. Click a row to read the full record. You can remove it from there when you are allowed to. The row leaves the list after it is removed."
       }
     },
     "documents": {
       "header": {
         "title": "Documents",
-        "description": "List, download, and attach documents to a person."
+        "description": "This page lists files that are attached to people in the organisation. You can find a document, download it, or attach a new file to a person. The file stays linked to that person after you save it. Use Staff if you need the rest of their profile."
       },
       "actions": {
         "title": "Attach document",
-        "description": "Click Attach document. Upload the file and link it to a person."
+        "description": "Click Attach document to upload a file and link it to a person. Choose the person and the file, then save. The new row appears in the list when the upload finishes. The file is not attached until you complete that save."
       },
       "filters": {
         "title": "Filter by title",
-        "description": "Type part of a title to shorten the list."
+        "description": "Type part of a title to shorten the list. Matching starts as you type, so you do not need the full name. Clear the field to see every document again. The filter looks at the title, not the file contents."
       },
       "content": {
         "title": "Download a file",
-        "description": "Each row is a document. Download it from the row."
+        "description": "Each row is one document linked to a person. Download saves that file to your device. Open the row if you need to see who it belongs to. The download uses the file that was uploaded, not a new copy generated here."
       }
     },
     "feedback": {
       "header": {
         "title": "Feedback",
-        "description": "The inbox, counts by status, and status updates. Token expiry stays on Settings."
+        "description": "This inbox holds feedback sent into the organisation, with a count for each status. You can see what is new, in review, resolved, or closed, then update a row. Token expiry for feedback links stays on Settings, not on this page. Resolving a row does not delete the original message."
       },
       "filters": {
         "title": "Filter by status",
-        "description": "Show all feedback, or only New, In review, Resolved, or Closed."
+        "description": "Show all feedback, or only New, In review, Resolved, or Closed. The list and the chart follow the status you pick. Use All when you want the full inbox again. A row stays in its status until someone changes it."
       },
       "content": {
         "title": "Resolve feedback",
-        "description": "The chart counts each status. Click Resolve on a row to mark it resolved."
+        "description": "The chart counts each status so you can see the workload before you open a row. Click Resolve on a row to mark that item resolved. The count moves from the previous status to Resolved after the update is saved. Closed is a separate status if you need to finish it later."
       }
     },
     "geofences": {
       "header": {
         "title": "Geofences",
-        "description": "Create areas and review entry events. The same areas draw on Competitor Overview."
+        "description": "A geofence is a named area on the map, with a centre and a radius. Create areas here, then review the entry events they record. The same areas are drawn on Competitor Overview, so a change here shows up on that map. An area with no events yet still stays in the list."
       },
       "actions": {
         "title": "New area",
-        "description": "Click New area. Set the name, latitude, longitude, and radius in metres."
+        "description": "Click New area to add a geofence. Set the name, the latitude, the longitude, and the radius in metres. Save it and the area is available for entry tracking and for the map. The radius is the distance from the centre, not a driving time."
       },
       "content": {
         "title": "Open an area",
-        "description": "Click a row to edit the area or see how many entry events it recorded."
+        "description": "Click a row to edit the name, the centre, or the radius. The same dialog shows how many entry events that area has recorded. Saving writes the new boundary. Events already recorded stay attached to this area."
       }
     },
     "usage": {
       "header": {
         "title": "Usage",
-        "description": "Analytics, summaries, and license usage. The server records the events itself."
+        "description": "This page shows how the organisation is using LORO: request volume, summaries, and the licence. The server records the events itself, so there is nothing to import. Use it to see activity and whether the licence is close to its limit. It is a report of use, not a place to change settings."
       },
       "content": {
         "title": "Read the last 30 days",
-        "description": "The chart is request volume. Under it, the license line shows errors and quota, and the list is requests by endpoint."
+        "description": "The chart is request volume over the last 30 days. Under it, the licence line shows errors and how much of the quota is used. The list breaks requests down by endpoint, so you can see which parts of the app are called most. Figures refresh from the server. They are not edited on this page."
       }
     },
     "products": {
       "header": {
         "title": "Products",
-        "description": "Create, edit, archive, restore, and review catalogue prices."
+        "description": "This is the product catalogue: names, prices, and whether an item is active. You can create a product, edit it, archive it, or restore it. Prices shown here are the catalogue prices used when people build quotations. Archiving hides a product from new use without deleting its history."
       },
       "actions": {
         "title": "New product",
-        "description": "Click New product. Enter the name and price, then save it to the catalogue."
+        "description": "Click New product to add an item to the catalogue. Enter the name and the price, then save. The product appears in the list and can be picked when a quotation is built. It is not in the catalogue until that save finishes."
       },
       "content": {
         "title": "Edit a product",
-        "description": "Click a row to change the name or price. Save current prices writes the prices on screen."
+        "description": "Click a row to change the name or the price, or to archive and later restore it. Save current prices writes the prices you see on screen for the rows in view. A price change applies to new quotations. It does not rewrite quotations that were already issued."
       }
     },
     "news": {
       "header": {
         "title": "News",
-        "description": "Organisation announcements."
+        "description": "News is the organisation announcement board. Posts you publish here are what people see as company news. Write a new announcement or open an existing one to correct it. A post is visible after you save it. Draft text in the form is not published until that save."
       },
       "actions": {
         "title": "New post",
-        "description": "Click New post. Write the title and the announcement, then save it."
+        "description": "Click New post to write an announcement. Add the title and the message, then save. The post joins this list and is the announcement people can read. Closing the form without saving drops the text you typed."
       },
       "content": {
         "title": "Edit a post",
-        "description": "Click a row to change that announcement."
+        "description": "Click a row to change that announcement. Update the title or the message, then save. The list shows the saved version, not the text still sitting in the form. People reading the news see the post after the save, not while you are still editing."
       }
     },
     "sales-tips": {
       "header": {
         "title": "Sales tips",
-        "description": "Edit the catalogue. Home still shows the tip of the day."
+        "description": "This is the catalogue of sales tips. Home still shows one tip of the day from this list, so an edit here changes what people can be shown. Add a tip or open one to rewrite it. The tip of the day is chosen from saved tips, not from an unsaved form."
       },
       "actions": {
         "title": "New tip",
-        "description": "Click New tip. Add a title and the tip text."
+        "description": "Click New tip to add a tip to the catalogue. Enter a title and the tip text, then save. The tip joins this list and becomes available for the tip of the day on Home. It is not in the catalogue until you save."
       },
       "content": {
         "title": "Edit a tip",
-        "description": "Click a row to update that tip."
+        "description": "Click a row to update that tip. Change the title or the text, then save. Home uses the saved wording the next time it picks this tip. Text you have not saved yet stays only in the form."
       }
     },
     "resellers": {
       "header": {
         "title": "Resellers",
-        "description": "Add, edit, archive, and restore reseller records."
+        "description": "This list is the reseller register. You can add a reseller, edit the record, archive one you no longer use, or restore an archived record. Archiving keeps the history and takes the reseller out of active use. A restored record returns to the active list."
       },
       "actions": {
         "title": "New reseller",
-        "description": "Click New reseller. Start the record with a name, then save the details."
+        "description": "Click New reseller to start a record. Begin with the name, then fill the details and save. The reseller appears in this list after the save. Closing the form without saving does not create a record."
       },
       "content": {
         "title": "Open a reseller",
-        "description": "Click a row to edit, archive, or restore that reseller."
+        "description": "Click a row to edit that reseller, archive it, or restore it. Save writes the details you changed. Archive hides it from active use and leaves the old record in place. Restore brings an archived reseller back onto the active list."
       }
     },
     "rewards": {
       "header": {
         "title": "Rewards",
-        "description": "The XP leaderboard and a person’s standing."
+        "description": "Rewards is the XP leaderboard for the organisation. You can see who is at the top and where one person stands. XP is earned from activity in LORO. This page reads the board. It is not where you grant points by hand."
       },
       "content": {
         "title": "Read the board",
-        "description": "The chart is the top of the board. The list under it is each person’s XP."
+        "description": "The chart is the top of the board, so the leaders are easy to compare. The list under it is each person's XP, including people who are not in the chart. Use it to see standing, not to edit a score. The figures follow the XP already recorded."
       }
     },
     "loyalty": {
       "header": {
         "title": "Loyalty",
-        "description": "Profiles, the reward catalogue, and claim history."
+        "description": "Loyalty holds the reward catalogue, who can claim, and the history of claims. You can add a reward, then record a claim against that catalogue. The history under the list is the transactions and broadcasts already saved. A claim uses a reward that exists in the catalogue."
       },
       "content": {
         "title": "Add and claim rewards",
-        "description": "Type a reward name and click Add reward. Claim uses a catalogue reward. The line under the list is transaction and broadcast history."
+        "description": "Type a reward name and click Add reward to put it in the catalogue. Claim uses one of those catalogue rewards and records it for the person. The line under the list is the transaction and broadcast history, so you can see what was already given. A claim is saved when you confirm it, not when you only type the name."
       }
     },
     "claims": {
       "header": {
         "title": "Claims",
-        "description": "Submit expenses, attach receipts, and track each claim from approval to payment."
-      },
-      "summary": {
-        "title": "Stage totals",
-        "description": "Click Total, Pending, Approved, Declined, or Paid. The list below follows that stage."
+        "description": "Claims is where expenses are submitted, approved, and paid. Attach a receipt, then follow the claim from the first submission through the decision to payment. You can search the list, export it, or open one claim to see the receipt and the status. A claim stays in its current stage until someone moves it."
       },
       "toolbar": {
         "title": "Search, export, and create",
-        "description": "Filter by date, group, currency, or person. Export downloads a spreadsheet. New claim starts a submission."
+        "description": "Filter by date, folder, currency, or person. The status control follows a stage: Total, Pending, Approved, Declined, or Paid, and the list below shows only that stage. Export downloads a spreadsheet of the claims in view. New claim starts a submission. Nothing is sent until you submit the form with the receipt."
       },
       "folders": {
         "title": "Claim folders",
-        "description": "Click a folder to show only the claims in that group."
+        "description": "Folders group claims so a team can keep one kind of expense together. Click a folder to show only the claims in that group. The list follows the folder you pick. Choose the wider view again when you want every folder."
       },
       "list": {
         "title": "Open a claim",
-        "description": "Claims are grouped. Click one to follow the receipt, the decision, and the payment."
+        "description": "Claims are grouped, so related submissions sit together. Click one to follow the receipt, the decision, and the payment. The stage you filtered in the toolbar is the set of rows you see here. Payment status updates after the claim is processed, not when you only open it."
       }
     },
     "iot": {
       "header": {
         "title": "IoT devices",
-        "description": "Connected hardware and access devices, organised by branch."
+        "description": "This is the register of connected hardware and access devices. Devices are organised by branch, so you can see what sits at each site. Open a card to inspect a device, or add one when new hardware is installed. A device is not on the list until its record is saved."
       },
       "toolbar": {
         "title": "Filter devices",
-        "description": "Filter by status, type, or branch, then search by id, tag, or location."
+        "description": "Filter by status, type, or branch, then search by id, tag, or location. The grid shows only the devices that match. Clear the filters to see the full register again. Search looks at those identifiers, not at notes buried inside a device."
       },
       "add": {
         "title": "Add device",
-        "description": "Click Add device. Record the hardware and the branch it belongs to."
+        "description": "Click Add device to record new hardware. Enter the device and the branch it belongs to, then save. The card appears in the grid for that branch. The device is not tracked here until the record is saved."
       },
       "grid": {
         "title": "Open a device",
-        "description": "Click a card to inspect or edit that device."
+        "description": "Each card is one device at a branch. Click a card to inspect it or edit the record. Changes apply after you save them on the device. The filters above still limit which cards are on screen."
       }
     },
     "approvals": {
       "header": {
         "title": "Approvals",
-        "description": "Filter by status or type, file a general request with New request, then open a card to approve or reject. Intake forms open from the same card; outbound webhooks fire when approved."
+        "description": "Approvals is the queue for requests that need a decision. Filter by status or type, file a general request with New request, then open a card to approve or reject. Intake forms open from the same card. When a request is approved, outbound webhooks fire for the integrations that listen for that event."
       },
       "toolbar": {
         "title": "Filter and New request",
-        "description": "Filter by status or type. New request files a general approval. My requests shows the ones you submitted."
+        "description": "Filter by status or type so the queue shows one kind of request. New request files a general approval and adds it to the queue. My requests shows the ones you submitted, which is useful when you are waiting on a decision. The list updates to the filter. A new request is filed when you submit it."
       },
       "list": {
         "title": "Open a card",
-        "description": "Open a card to approve or reject. Intake forms open from the same card. When approved, outbound webhooks fire."
+        "description": "Open a card to approve or reject that request. Intake forms open from the same card when the request uses one. Approving saves the decision and can fire outbound webhooks. Rejecting records the decision without treating the request as approved."
       }
     },
     "payslips": {
       "header": {
         "title": "Payslips",
-        "description": "View and download your payslip documents."
-      },
-      "import": {
-        "title": "Import from storage",
-        "description": "Preview the storage import, then confirm it. Only people who can import payslips see this."
+        "description": "Payslips lists the payslip documents available to you. You can view a payslip on screen or download the file. The list can cover all time, or a date range and a status you choose. This page reads documents that already exist. It is not the payroll run itself."
       },
       "filters": {
         "title": "Filter payslips",
-        "description": "The list starts as all time. Switch to a date range or a status to narrow it."
+        "description": "The list starts as all time, so older payslips are included until you narrow it. Switch to a date range or a status when you want a smaller set. The table below follows that filter. Clear it to return to the full list."
       },
       "table": {
         "title": "View or download",
-        "description": "View opens the payslip. Download saves the file. Page size under the table sets how many rows load."
+        "description": "Each row is one payslip. View opens it on screen. Download saves the file to your device. Page size under the table sets how many rows load at once. The file is the stored payslip, not a new calculation made on this page."
       }
     },
     "competitors": {
       "header": {
         "title": "Competitors",
-        "description": "Track rivals, threat levels, and locations alongside your clients."
+        "description": "Competitors is the register of rivals you track next to your clients. Each record can carry a threat level, whether the rival is direct or indirect, and a location. Add one by hand or import a spreadsheet. The same locations can be seen with your sites on Competitor Overview."
       },
       "toolbar": {
         "title": "Filter and search",
-        "description": "Filter by status, direct or indirect, and threat level. Search by name."
+        "description": "Filter by status, direct or indirect, and threat level. Search by name when you already know the rival. The grid shows only the matches. Clear the filters to see the full register again."
       },
       "add": {
         "title": "Add competitor",
-        "description": "Click Add competitor, or Import to bring in a spreadsheet. Both land in this grid."
+        "description": "Click Add competitor to create one record, or Import to bring in a spreadsheet. Both land in this grid after they are saved. Review an import before you rely on the threat and the location. A row is not in the register until the add or the import finishes."
       },
       "grid": {
         "title": "Open a competitor",
-        "description": "Click a card for the threat, the location, and edit or delete when you manage the list."
+        "description": "Click a card for the threat, the location, and the rest of the record. When you manage the list you can edit or delete it from there. Delete removes that rival from the register. The map uses the location saved on the card."
       }
     },
     "takeoff": {
       "header": {
         "title": "System takeoff",
-        "description": "Measure a ceiling or partition. Quantities are calculated on the server, then issued as a quotation."
+        "description": "A takeoff measures a ceiling or a partition for a job. You name the job and the client, then measure. Quantities are calculated on the server, and the result can be issued as a quotation. The list shows the status and the total for each takeoff. Measuring continues inside the takeoff, not on this list."
       },
       "create": {
         "title": "New takeoff",
-        "description": "Click New takeoff. Name the job and the client, then open it to measure."
+        "description": "Click New takeoff to start a job. Name the job and the client, then open it to measure. The new takeoff appears in the list once it is created. Quantities stay empty until you measure inside that takeoff."
       },
       "list": {
         "title": "Open a takeoff",
-        "description": "Click a reference to continue measuring and issue the quotation. Status and total stay on this row."
+        "description": "Click a reference to continue measuring and, when it is ready, issue the quotation. Status and total stay on this row so you can see progress without opening it. The quotation uses the quantities the server calculated. Issuing it does not happen from the row alone."
       }
     },
     "deliveries": {
       "header": {
         "title": "Deliveries",
-        "description": "Assign an open ERP sales order to a driver, filter the list, then open a row for the route and proof of delivery."
+        "description": "Deliveries assigns an open ERP sales order to a driver and tracks the stop. Filter the list, assign a delivery, then open a row for the route and the signed proof of delivery (POD). The order comes from ERP. The assignment and the POD are what you record here."
       },
       "toolbar": {
         "title": "Filter deliveries",
-        "description": "Filter by day, status, driver, or search. Page size under the table sets how many rows load."
+        "description": "Filter by day, status, driver, or search so the table shows one slice of the work. Page size under the table sets how many rows load. The list follows the filter immediately. Clear it when you want every delivery in the wider set again."
       },
       "assign": {
         "title": "Assign delivery",
-        "description": "Click Assign delivery. Pick an open ERP sales order and the driver who will run the stop."
+        "description": "Click Assign delivery to give a stop to a driver. Pick an open ERP sales order and the driver who will run it, then save. The delivery appears in the list for that driver and day. It is not assigned until you confirm the form."
       },
       "list": {
         "title": "Open a delivery",
-        "description": "Click a row for the route and the signed proof of delivery (POD)."
+        "description": "Click a row for the route and the signed proof of delivery (POD). Use it to see whether the stop is still open or already completed. The POD is the signed record for that delivery. Editing the route does not change the original ERP sales order."
       }
     },
     "store-operations": {
       "header": {
         "title": "Store operations",
-        "description": "Live branch openings, checklists, and stock counts across every store."
+        "description": "Store operations is the live view of branch openings, checklists, and stock counts across every store. Overview is the board for today. Details is the longer store-by-store list. Figures follow the country, region, and period you set. A store that has not opened yet still appears so you can see it is missing."
       },
       "tabs": {
         "title": "Overview and details",
-        "description": "Overview is the live board. Details is the longer store-by-store list."
+        "description": "Overview is the live board: totals you can click, then the stores in that slice. Details is the longer store-by-store list when you need more than the board. Switching tabs does not change the country, region, or period. Use Details when the board is too compact."
       },
       "filters": {
         "title": "Narrow the stores",
-        "description": "Filter by country, region, and period. Features opens the extra store-operations tools."
+        "description": "Filter by country, region, and period so the board matches the stores you want. Features opens the extra store-operations tools. The totals and the store list both follow these filters. A store outside the filter stays hidden until you widen it."
       },
       "summary": {
         "title": "Click a total",
-        "description": "Each card is a slice of the day: all stores, opened on time, late, missed, closed on time, or checklists completed. Click one to keep only those stores."
+        "description": "Each card is a slice of the day: all stores, opened on time, late, missed, closed on time, or checklists completed. Click one to keep only those stores in the list. Click the wider total to see every store in the filter again. The cards count the current period, not a different month."
       },
       "stores": {
         "title": "Store status",
-        "description": "Each row is a branch’s opening and checklist right now. Open it for that store’s session."
+        "description": "Each row is a branch's opening and checklist right now. Open it for that store's session, including what was completed and what is still open. The row follows the total you clicked above. Stock counts and checklist answers live in the session, not on the summary card."
       }
     },
     "store": {
       "header": {
         "title": "Store",
-        "description": "Browse products, add them to your cart, and submit a quotation."
+        "description": "The store is the catalogue you buy from. Browse products, add them to your cart, and submit that cart as a quotation. Search or filter when the catalogue is long. The quotation is created when you submit the cart, not when you only open a product."
       },
       "toolbar": {
         "title": "Search and cart",
-        "description": "Search or filter by category. The cart holds the lines you will send as a quotation."
+        "description": "Search or filter by category to find a product. The cart holds the lines you will send as a quotation. Change quantities in the cart before you submit. Leaving the page does not submit the quotation for you."
       },
       "catalogue": {
         "title": "Add a product",
-        "description": "Click a product to add it to the cart. Load more brings the next page of the catalogue."
+        "description": "Click a product to add it to the cart. Load more brings the next page of the catalogue when the list is longer than one page. The cart updates as you add lines. Those lines become a quotation only after you submit the cart."
       }
     },
     "orders": {
       "header": {
         "title": "Orders",
-        "description": "Track quotations and orders by status."
+        "description": "Orders tracks quotations and orders by status, from the first quote through to a completed order. The board is columns, and each card is one quotation or order. Open a card for the detail. New order sends you to the store to build the next quotation."
       },
       "create": {
         "title": "New order",
-        "description": "Click New Order. That opens the store so you can build the next quotation."
+        "description": "Click New Order. That opens the store so you can build the next quotation and submit it. The new card appears on this board after the quotation is submitted. Clicking the button does not create an empty order by itself."
       },
       "board": {
         "title": "Open an order",
-        "description": "Columns are the quotation and order statuses. Click a card for the detail."
+        "description": "Columns are the quotation and order statuses, so you can see what is waiting and what has moved on. Click a card for the detail, including the lines and the current status. Moving work along updates the column after the status is saved. A card stays in its column until that happens."
       }
     },
     "projects": {
       "header": {
         "title": "Projects",
-        "description": "Manage your projects, create new ones, and track their progress."
+        "description": "Projects is where you keep jobs, create new ones, and see how far each has got. A project starts with a name and then collects its progress on the card. Open a card for the detail. Creating a project only adds the record. It does not schedule visits or tasks by itself."
       },
       "create": {
         "title": "Create project",
-        "description": "Click Create project. Name it, then it appears in this grid."
+        "description": "Click Create project, name it, and save. The project appears in this grid. You can open it next to add the rest of the detail. Closing the form without saving does not add a card."
       },
       "filters": {
         "title": "Filter projects",
-        "description": "Search by name or description, or keep one status."
+        "description": "Search by name or description, or keep one status. The grid shows only the projects that match. Clear the search and the status when you want the full set again. The filter does not change a project's status. It only hides rows."
       },
       "grid": {
         "title": "Open a project",
-        "description": "Click a card for progress and the project detail."
+        "description": "Click a card for progress and the project detail. Update the project from that screen, then return here to see the card. The status on the card follows what was saved. Unsaved edits inside the project stay there until you save them."
       }
     },
     "account": {
       "header": {
         "title": "Account",
-        "description": "Your company profile, credit, and contact details."
+        "description": "Account is your company profile: who you are, how to contact you, and the commercial details on the account. You can read the snapshot or switch to edit. Credit and the assigned sales rep are shown with the company details. Changes are kept only after you save the form."
       },
       "edit": {
         "title": "Edit profile",
-        "description": "Click Edit profile to change the company details. View profile returns to the read-only cards."
+        "description": "Click Edit profile to change the company details. The cards become a form. View profile returns to the read-only cards. Switching back without saving drops the edits that were not saved."
       },
       "profile": {
         "title": "Company snapshot",
-        "description": "Name, contact, address, credit limit, and the sales rep assigned to you."
+        "description": "This is the read-only snapshot: name, contact, address, credit limit, and the sales rep assigned to you. Use it to confirm what is on the account before you edit. The figures are the saved profile. They change after Edit profile is saved, not while the form is open."
       },
       "details": {
         "title": "Company details",
-        "description": "Company, contact, and commercial fields. Edit profile turns this into the form."
+        "description": "These are the company, contact, and commercial fields. Edit profile turns this into the form so you can change them. Save on that form writes the account. Until you save, the snapshot still shows the previous details."
       }
     },
     "visits": {
       "header": {
         "title": "Visits",
-        "description": "Review visits you already logged. Scored recordings are under Call recordings."
+        "description": "Visits is the history of visits you have already logged, plus the control to start or end one. Scored recordings of the call itself stay on Call recordings, not on this page. Open a past visit to update it, or switch to the map to see where visits happened. A visit is in the history after it is ended and saved."
       },
       "visit-action": {
         "title": "Start or end a visit",
-        "description": "Click Start visit and choose in person or phone. While a visit is running, click the red End visit to add notes and the outcome."
+        "description": "Click Start visit and choose in person or phone. While a visit is running, the same control becomes the red End visit. End visit is where you add notes and the outcome. The visit stays open until you end it. Starting a second visit is not how you close the one that is running."
       },
       "toolbar": {
         "title": "Filter history",
-        "description": "The range is the 1st of this month through today. Change dates, region, business type, teammate, or search. Start or end a visit from this row."
+        "description": "The range starts as the 1st of this month through today. Change dates, region, business type, teammate, or search to show a different set. You can also start or end a visit from this row. The list and the map both follow the filter. Clear it to return to the month-to-date set."
       },
       "history-content": {
         "title": "List or map",
-        "description": "Click a row to update that visit. Switch to the map to see where visits happened."
+        "description": "The list is one row per visit. Click a row to update that visit, including notes and the outcome. Switch to the map to see where visits happened for the same filter. The map uses visits that have a location. A visit without coordinates still stays in the list."
       }
     },
     "clients": {
       "header": {
         "title": "Clients",
-        "description": "Click Add client to register a client for the organisation."
+        "description": "Clients is the organisation's client register. Click Add client to register a client, then find them later from the cards. The toolbar filters the register. Opening a card shows the full record. A client is in the register after the add form is saved."
       },
       "toolbar": {
         "title": "Filter and search",
-        "description": "Filter by status and category. Search by name, email, or phone. Click X on a filter to clear it."
+        "description": "Filter by status and category, and search by name, email, or phone. The cards below show only the matches. Click X on a filter to clear that one without wiping the others. Search looks at those contact fields, not at notes inside the client record."
       },
       "grid": {
         "title": "Client cards",
-        "description": "Click a card for the full record. Click Load more to fetch the next page."
+        "description": "Each card is one client. Click a card for the full record, where you can read and update the saved details. Click Load more to fetch the next page when the register is longer than what is on screen. The card shows the saved client. Edits apply after you save them on the record."
       }
     },
     "settings": {
       "header": {
         "title": "Settings",
-        "description": "Organisation profile, appearance, hours, branches, calendar, scraping, notices, banners, and call quality."
+        "description": "Settings holds the organisation profile, appearance, working hours, branches, calendar, scraping, notices, banners, and call quality. Regional is where you choose your language. Each tab saves on its own, so a change on one tab does not update the others until you save that tab."
       },
       "tab-nav": {
         "title": "Sections",
-        "description": "Click a tab to edit that section. This tour stays on the tab you already have open."
+        "description": "Click a tab to edit that section. Profile, appearance, hours, branches, calendar, and the other tabs each have their own fields and their own save. This tour opens Regional so you can see the language menu. Other sections stay as you left them until you click their tab."
       },
       "active-panel": {
         "title": "This section",
-        "description": "Edit the fields for the open tab. Nothing is saved until you click Save changes."
+        "description": "These are the fields for the tab you have open. Change what you need, then use Save changes at the bottom of the section. Cancel, where it is shown, drops edits that are not saved yet. Switching tabs does not keep unsaved text."
       },
       "panel-actions": {
         "title": "Save or cancel",
-        "description": "Save changes keeps this section. Cancel drops unsaved edits."
+        "description": "Save changes writes this section only. Other tabs keep their own save button, so saving here does not publish edits you left open elsewhere. Cancel drops the edits on this section and restores the last saved values. If the button stays busy, the section is already saving."
+      },
+      "language": {
+        "title": "Your language",
+        "description": "This menu sets the language for the whole app. Auto follows your device language or country. You can choose English, Portuguese, French, Spanish, or Italian instead. The same menu in the header uses this setting, so pages, tours, and buttons switch together."
       }
     },
     "leads": {
       "header": {
         "title": "Leads",
-        "description": "Create a lead, search the list, and open a person to follow up."
+        "description": "Leads is where you create a person to follow up, search the list, and open them to call or message. Leads are grouped by owner, or left Unassigned. Import can add many at once from a spreadsheet or from Google Maps. A lead you create by hand appears in the list after the form is saved."
       },
       "create": {
         "title": "Create lead",
-        "description": "Click Create lead, fill the form, and the new lead appears in the list."
+        "description": "Click Create lead and fill the form. Save it and the new lead appears in the list, under you or under Unassigned, depending on the owner you set. You can open that lead next to call or message them. Closing the form without saving does not add a lead."
       },
       "toolbar": {
         "title": "Filter and search",
-        "description": "The date range starts as this month. Change dates, filters, or search to show a different set of leads."
+        "description": "The date range starts as this month. Change the dates, the other filters, or search to show a different set of leads. The groups below follow that set. Clear the filters to return to this month. Search narrows the people already in the range. It does not create a lead."
       },
       "import": {
         "title": "Import leads",
-        "description": "Click Import to add leads from a spreadsheet or Google Maps. For Maps, review the places and assign owners before they show in this list."
+        "description": "Click Import to add leads from a spreadsheet or from Google Maps. For Maps, review the places and assign owners before they show in this list. Rows you skip in that review are not added. A spreadsheet import uses the columns you map. It does not invent owners."
       },
       "list": {
         "title": "Lead list",
-        "description": "Leads are grouped by owner, or Unassigned. Click a person to expand them. Click a lead to open it."
+        "description": "Leads are grouped by owner, or by Unassigned when nobody owns them yet. Click a person to expand that group and see every lead underneath. Click a lead to open it. The groups follow the date range and filters above."
       },
       "expand": {
         "title": "Expand a group",
-        "description": "Click this row. Every lead in that group opens underneath."
+        "description": "This row is one owner, or Unassigned. Click it and every lead in that group opens underneath. Click it again to collapse the group. Expanding does not assign the leads. It only shows them."
       },
       "open": {
         "title": "Open a lead",
-        "description": "Click this row. The lead detail opens."
+        "description": "This row is one lead inside the group. Click it and the lead detail opens. From there you can call, message, or read the score. The row itself stays in the list when you close the detail."
       },
       "detail": {
         "title": "Lead detail",
-        "description": "Start or end a call, message them on WhatsApp, email, or SMS, and read the call score. Close the dialog to return to the list."
+        "description": "From the lead you can start or end a call, message them on WhatsApp, email, or SMS, and read the call score. Use the contact actions for the channel you actually want. Close the dialog to return to the list. A call you start here is scored with the other calls. The visit log stays on Visits."
       }
     },
     "staff": {
       "header": {
         "title": "Staff",
-        "description": "See who is present or absent today."
+        "description": "Staff shows who is present or absent today, and it is where you open a person's record. You can add a teammate, send them an intake link, and filter the cards by role, branch, or country. The clock on a card, when it is shown, opens that person's attendance history. Travel export downloads a report for the dates you pick."
       },
       "add": {
         "title": "Add a teammate",
-        "description": "Add user creates a staff account. Send intake link lets them finish onboarding themselves."
+        "description": "Add user creates a staff account that you fill in. Send intake link lets them finish onboarding themselves from the link you send. Use Add user when you already have their details. Use the intake link when they should complete the form. The person appears in the grid after the account exists."
       },
       "toolbar": {
         "title": "Filter and search",
-        "description": "Filter by status, role, workforce, branch, or country. Search by name, email, or HR ID."
+        "description": "Filter by status, role, workforce, branch, or country. Search by name, email, or HR ID. The cards show only the people who match. Clear a filter to widen the grid again. Search does not look through attendance notes."
       },
       "grid": {
         "title": "Teammate cards",
-        "description": "Click a card for that person’s detail. Click the clock, when it is shown, for their attendance history."
+        "description": "Each card is one person, with whether they are present or absent today. Click a card for that person's detail. Click the clock, when it is shown, for their attendance history. The card uses today's attendance. It is not the full month until you open the history."
       },
       "travel": {
         "title": "Travel report",
-        "description": "Download that person’s Excel workbook or a day-by-day PDF for the dates you pick."
+        "description": "Download that person's Excel workbook or a day-by-day PDF for the dates you pick. The file covers the range you choose, not automatically all time. Use it when you need a record of travel for that person. The download starts after you confirm the dates."
       }
     },
     "planning": {
       "header": {
         "title": "Planning",
-        "description": "Tasks, today’s work, and the day’s routes."
+        "description": "Planning holds tasks, what is due today, and the day's routes. Create a task and it shows in All tasks. My day is the work due today. Routes is the planned field day, built from the nightly ERP import. The info button explains how those routes are booked."
       },
       "create": {
         "title": "Create a task",
-        "description": "Click Create task, fill it in, and assign it. It shows up in All tasks."
+        "description": "Click Create task, fill it in, and assign it. The task shows up in All tasks after you save. If it is due today, it also belongs on My day. Closing the form without saving does not add the task."
       },
       "tabs": {
         "title": "All tasks, My day, Routes",
-        "description": "All tasks is the full list. My day is due today. Routes is the planned field day."
+        "description": "All tasks is the full list you can filter. My day is what is due today, so you can work that set without rebuilding the filter. Routes is the planned field day for the date you pick. Switching tabs does not delete tasks. It changes which set you are looking at."
       },
       "reminders": {
         "title": "Reminders",
-        "description": "On All tasks, this is due today, overdue, and upcoming. Open an item to work it."
+        "description": "On All tasks, this groups what is due today, what is overdue, and what is upcoming. Open an item to work it, update the status, or change the detail. The counts follow the tasks in the current list. My day and Routes do not use this same reminder strip."
       },
       "filters": {
         "title": "Filter tasks",
-        "description": "Set date, status, priority, assignee, client, branch, overdue only, or search. The list below updates to match."
+        "description": "Set date, status, priority, assignee, client, branch, overdue only, or search. The list below updates to match. Use overdue only when you want the late work on its own. Clear the filters to see the wider list again. Filters hide rows. They do not complete a task."
       },
       "list": {
         "title": "Task list",
-        "description": "Click a task to open it and update status or details."
+        "description": "Each row is a task in the filtered set. Click a task to open it and update the status or the details. The row shows the saved task. Changes appear in the list after you save them on the task. Pagination under the list moves through the rest of the set."
       },
       "pagination": {
         "title": "Pages",
-        "description": "Change rows per page, or move to the next page."
+        "description": "Change rows per page when you want a longer or shorter list. Move to the next page to see the rest of the filtered tasks. The page size does not change which tasks match the filter. It only changes how many load at once."
       },
       "routes": {
         "title": "Routes",
-        "description": "Pick the day, click Recalculate to rebuild routes, or open Competitor Overview for the map."
+        "description": "Pick the day the visits were planned. Click Recalculate to rebuild that day's routes when the stops need to be planned again. Open Competitor Overview for the map of the same world, including branches and competitors. An empty day usually means you picked a date with no planned stops, or the branch has no coordinates."
       }
     },
     "pipeline": {
       "header": {
         "title": "Pipeline",
-        "description": "Targets, quotations, leads, and visit outcomes for the period you can see."
+        "description": "Pipeline brings targets, quotations, leads, and visit outcomes into one view for the period you can see. What you see follows your access, so a team view and an organisation view are not the same set. Use the sections below to read each part. This page summarises. Creating a lead or a visit still happens on those pages."
       },
       "targets": {
         "title": "Targets",
-        "description": "Progress on sales, leads, check-ins, and calls for the current target period."
+        "description": "This block is progress on sales, leads, check-ins, and calls for the current target period. Compare what was set with what has been recorded so far. The period is the target period, which may not match a custom range used elsewhere. Open Reports when you need the full target table."
       },
       "quotations": {
         "title": "Quotations",
-        "description": "Change the ERP date window to load quotation lines. Compare them with LORO quotations in the same period."
+        "description": "Change the ERP date window to load quotation lines for that range. Compare them with LORO quotations in the same period. The window controls which lines load. A quotation outside the window stays out of this comparison until you widen the dates."
       },
       "leads": {
         "title": "Leads",
-        "description": "Counts, pipeline value, and quote value from visits. Open a status to see the breakdown for this range."
+        "description": "These are counts, pipeline value, and quote value that came from visits in the range. Open a status to see the breakdown for that status. The figures follow the visits you can see, not every lead in the organisation. Use the Leads page to open and work a single person."
       },
       "visits": {
         "title": "Visits",
-        "description": "Check-out totals for this range: visits, sales, quotes, and values."
+        "description": "These are the check-out totals for this range: visits, sales, quotes, and values. They summarise visits that were checked out, not visits that are still open. Use the Visits page to update a single visit or to see it on the map. The totals follow the period and the access of this view."
       }
     },
     "dashboard-attendance": {
       "clock": {
         "title": "Clock in and out",
-        "description": "Click here to start your shift, take a break, or end it. Clock-in asks office or work from home. Pulse may ask a short check-in after you clock in or out."
+        "description": "Click here to start your shift, take a break, or end it. Clock-in asks whether you are at the office or working from home. Pulse may ask a short check-in after you clock in or out. The day stays open until you end the shift. A break does not clock you out."
       },
       "variablePay": {
         "title": "Variable pay",
-        "description": "Extra pay on top of commission this month. It shows which gates are open, how close you are to the maximum, and what is still left."
+        "description": "This is extra pay on top of commission for the month. It shows which gates are open, how close you are to the maximum, and what is still left. The gates follow the rules for this cycle, so a closed gate stays closed until its condition is met. The amount is a reading of progress. It is not a payslip."
       },
       "bonus": {
         "title": "Year-end bonus",
-        "description": "Your year-end bonus status for the current cycle."
+        "description": "This is your year-end bonus status for the current cycle. It shows where the bonus stands, not a payment that has already been made. The cycle is the bonus year, which is separate from the attendance month below. Open it when you need the status. Payroll still issues the payslip."
       },
       "month": {
         "title": "Change month",
-        "description": "Open this menu to switch among the last three months."
+        "description": "Open this menu to switch among the last three months. The attendance list below follows the month you pick. Today stays on the clock control. Changing the month does not change the shift you have open. It only changes which record you are reading."
       },
       "logs": {
         "title": "View logs",
-        "description": "Click View logs for the day-by-day attendance record."
+        "description": "Click View logs for the day-by-day attendance record of the month you selected. Use it when the summary marks are not enough and you need the times. The log follows that month. It does not include a month outside the three you can select here."
       },
       "list": {
         "title": "This month",
-        "description": "Each day is marked attended, missed, or still ahead."
+        "description": "Each day in the selected month is marked attended, missed, or still ahead. Attended means a shift was recorded. Missed means the day passed without one. Days still ahead have not happened yet, so they are not absences. Open View logs when you need the times behind a mark."
       }
     },
     "calls": {
       "header": {
         "title": "Call recordings",
-        "description": "PBX calls (Linkus or a desk phone) and in-app LORO calls are listed here with score and transcript status. Visits stay on the Visits page."
+        "description": "This list is PBX calls, from Linkus or a desk phone, and in-app LORO calls. Each row can show a score and whether a transcript is ready. Visits stay on the Visits page. A visit is the field record. A recording is the call audio and its score."
       },
       "filters": {
         "title": "Filter recordings",
-        "description": "The range is this month through today. Change date, status, direction, branch, or search to narrow the list."
+        "description": "The range starts as this month through today. Change the date, status, direction, branch, or search to narrow the list. Direction separates inbound and outbound. The table shows only the rows that match. Clear the filters to return to the month-to-date list."
       },
       "list": {
         "title": "Open a recording",
-        "description": "Click a row for the transcript, score, and audio."
+        "description": "Click a row for the transcript, the score, and the audio. Play the audio from the detail when you need to hear the call. The score is the saved result for that recording. Closing the detail returns you to the filtered list."
       }
     },
     "reports": {
       "header": {
         "title": "Reports",
-        "description": "Targets, policy, call quality, tasks, leads activity, and activity for the period your access allows."
+        "description": "Reports covers targets, policy, call quality, tasks, leads activity, and Insights for the period your access allows. Each tab is a different cut of that period. Your access decides whether you see yourself, your team, or the organisation. Changing a tab does not change the underlying records on Leads, Visits, or Planning."
       },
       "tabs": {
         "title": "Report tabs",
-        "description": "Targets is goals. Policy is compliance. Call quality is scored calls. Insights is activity clusters. Tasks & planning is planned visits versus what was done. Leads activity is imported leads by status for each person."
+        "description": "Targets is the goal board. Policy is the compliance score for visits and calls. Call quality is scored calls. Insights groups activity. Tasks and planning compares planned visits with what was done. Leads activity is imported leads by status for each person. This tour opens each tab. The date range stays with the tab you are on."
+      },
+      "targets": {
+        "title": "Targets",
+        "description": "This tab is the goal board for the period your access allows. Search, filter, and export the rows. Each row is one person's target, progress, and policy standing. Open a row for the detail. The numbers follow the date range and the branches you can see."
+      },
+      "policy": {
+        "title": "Policy",
+        "description": "Policy scores visits, calls, and the other rules for a calendar month or a custom range. The cards summarise the period. The table is one row per person, and you can sort, page, and download a CSV. A range that is too long, or a month that is still open, is marked on the page. Finalising a month is limited to people who manage the organisation."
       },
       "callQuality": {
         "title": "Call quality",
-        "description": "Leaderboard, funnel, and coaching notes for scored calls in this range."
+        "description": "Call quality is the leaderboard, the funnel, and the coaching notes for scored calls in this range. Use it to see who is scoring well and where calls drop out of the funnel. The notes are for coaching. They do not replace the recording, which stays on Call recordings. The set follows the report range and the people you can see."
       },
       "insights": {
         "title": "Insights",
-        "description": "Clusters of work, flags, and where time went for the same range."
+        "description": "Insights clusters the work in this range: groups of activity, flags, and where time went. Use it to see patterns, not to edit a single visit or task. A flag is a prompt to look closer. It does not change the underlying record. The same range drives the other report tabs."
+      },
+      "tasks": {
+        "title": "Tasks and planning",
+        "description": "This tab compares planned visits with what was actually done in the same range. Use it to see which planned stops were completed, missed, or still open. The figures follow the report dates and the people you can see. It does not replace Planning, where you create and edit the tasks."
+      },
+      "leadsActivity": {
+        "title": "Leads activity",
+        "description": "Imported leads are grouped by status for each person in this range. Use it to see who is moving leads and which statuses are stuck. Open the Leads page to create, import, or work a single lead. This tab is the summary, not the working list."
       }
     },
     "merchandise": {
       "header": {
         "title": "Merchandise",
-        "description": "Field photos and notes, with review status on each log."
+        "description": "Merchandise is the log of field photos and notes, with a review status on each entry. A new log stays in review until it is published. Filter the list, or open a row for the full photo and the review actions. The photo is attached when you create the log. Publishing is a later step."
       },
       "create": {
         "title": "New merchandise",
-        "description": "Click New merchandise. Attach a photo, name the client, and add comments. The log stays in review until it is published."
+        "description": "Click New merchandise. Attach a photo, name the client, and add comments, then save. The log stays in review until it is published, so it is not treated as final yet. You can open it from the list to review it. Closing the form without saving does not add a log."
       },
       "filters": {
         "title": "Filter logs",
-        "description": "Filter by date, page size, branch, teammate, status, or search."
+        "description": "Filter by date, page size, branch, teammate, status, or search. The list shows only the logs that match, including ones still in review if that status is included. Clear a filter to widen the list. Page size changes how many rows load, not which logs exist."
       },
       "list": {
         "title": "Open a log",
-        "description": "Click a row for the full photo and review actions."
+        "description": "Click a row for the full photo and the review actions. From there you can read the notes and move the review on, including publish when you are allowed. The status on the row updates after that action is saved. The photo is the one attached to the log."
       }
     },
     "assets": {
       "header": {
         "title": "Assets",
-        "description": "Your linked equipment and vehicles, or the whole organisation inventory if you manage it. Managers switch that scope in the filters."
+        "description": "Assets lists equipment and vehicles. You see the items linked to you, or the whole organisation inventory if you manage it. Managers switch that scope in the filters. Open a card for purchase and insurance details, or add an asset when something new is issued. The register is the saved inventory, not a wish list."
       },
       "add": {
         "title": "Add an asset",
-        "description": "Click Add asset. Record the item, who owns it, and which branch it belongs to."
+        "description": "Click Add asset. Record the item, who owns it, and which branch it belongs to, then save. The card appears in the grid for that scope. The asset is not in the inventory until the form is saved."
       },
       "filters": {
         "title": "Filter the inventory",
-        "description": "Filter by date, branch, owner, category, or search. Page size under the grid sets how many cards load."
+        "description": "Filter by date, branch, owner, category, or search. Managers can also switch between their own linked items and the wider inventory. Page size under the grid sets how many cards load. Clear the filters to see the wider set your access allows."
       },
       "list": {
         "title": "Open an asset",
-        "description": "Click a card for purchase and insurance details, or to edit and delete it."
+        "description": "Click a card for purchase and insurance details. When you manage the item you can edit or delete it from there. Delete removes it from the inventory. Insurance and purchase fields are what was saved on the asset, not a live policy lookup."
       }
     },
     "performance": {
       "header": {
         "title": "Performance",
-        "description": "Sales for the countries, branches, and dates you can see. The title switches to Consolidated Statement when that view is on."
+        "description": "Performance is sales for the countries, branches, and dates you can see. The title switches to Consolidated Statement when that view is on, because the page then shows the income statement instead of the performance report. Set the range and the filters before you read the charts. Refresh pulls the latest numbers from the server."
       },
       "filters": {
         "title": "Dates and filters",
-        "description": "Set the date range. Open filters for country, branch, and category. Click refresh to pull the latest numbers."
+        "description": "Set the date range first. Open filters for country, branch, and category when you need a smaller cut. Click refresh to pull the latest numbers for that selection. The summary and the charts follow the same filters. A branch you cannot access stays out of the list."
       },
       "consolidated": {
         "title": "Consolidated statement",
-        "description": "Turn this on for the income statement across countries and branches. Turn it off to return to the performance report."
+        "description": "Turn this on for the income statement across the countries and branches in the filter. Turn it off to return to the performance report, with target, gross profit, and the charts. The date range stays in place either way. The statement is a view of the same period, not a different set of books you edit here."
       },
       "target": {
         "title": "Target and gross profit",
-        "description": "Revenue against target, and gross profit, for this range."
+        "description": "These figures are revenue against target, and gross profit, for the range and filters you set. Use them as the headline before you read the charts. They follow the refreshed numbers. Changing a filter without refreshing can leave the previous pull on screen until you refresh."
       },
       "charts": {
         "title": "Charts",
-        "description": "Category, branch, payment mix, products, salespeople, and hourly sales for the filters you set."
+        "description": "The charts break the same selection into category, branch, payment mix, products, salespeople, and hourly sales. Use them to see where the revenue sits, not to edit a transaction. They follow the filters and the last refresh. Consolidated statement replaces this view while it is on."
       }
     },
     "wellbeing": {
       "header": {
         "title": "Wellbeing",
-        "description": "Mood check-ins, follow-ups, and how mood lines up with performance."
+        "description": "Wellbeing reads mood check-ins, follow-ups, and how mood lines up with performance. Today is the live day. Insights, Executive, and Correlations use the date range and branch you set. These views are estimates to help you notice people. They are not a diagnosis and they do not prove a cause."
       },
       "filters": {
         "title": "Date and branch",
-        "description": "Insights, Executive, and Correlations use this date range and branch. Today ignores the range."
+        "description": "Insights, Executive, and Correlations use this date range and branch. Change them before you read those tabs, because the charts and findings follow the selection. Today ignores the range and stays on the live day. A branch outside your access is not in the list."
       },
       "tabs": {
         "title": "Today, Insights, Executive, Correlations",
-        "description": "Today is live check-ins. Insights summarises the range. Executive is the index charts. Correlations compares mood with performance. These are estimates, not causes."
+        "description": "Today is live check-ins and the people who need support. Insights summarises the range. Executive is the index charts. Correlations compares mood with performance. Admin, when you can see it, is where follow-ups are recorded. These are estimates, not causes, and they do not replace a conversation with the person."
       },
       "today": {
         "title": "Today",
-        "description": "KPIs, branch comparison, and named lists of people who need support or a follow-up."
+        "description": "Today shows the live KPIs, a branch comparison, and named lists of people who need support or a follow-up. The numbers are for this day, not for the range in the toolbar. Open a person when you need to act. Recording the outcome is done on Admin, not on this list."
+      },
+      "insights": {
+        "title": "Insights",
+        "description": "Insights summarises mood for the date range and branch you set above. Each card is a finding, marked positive, needs attention, or needs action. The badge tells you whether the text came from the model or from the fixed rules. These are summaries of the check-ins, not a diagnosis."
       },
       "executive": {
         "title": "Executive index",
-        "description": "Each chart is one rolled-up index for the range and branch you set."
+        "description": "Each chart is one rolled-up index for the range and branch you set. Read them together to see the shape of the period, not a single person's story. The index is a summary score. It does not name who needs a follow-up. Use Today or Admin for named people."
+      },
+      "correlations": {
+        "title": "Correlations",
+        "description": "Correlations compares mood with performance for the same range and branch. Each row is a finding, with the size of the difference, how many people it covers, and how confident the comparison is. A larger difference is not a cause. Treat the table as a prompt to look closer, not as proof."
+      },
+      "admin": {
+        "title": "Follow-up",
+        "description": "Admin lists people who asked for support or who are flagged as higher risk. Open a person to record how you followed up. The note stays on this page for the selected day. Use it after you have spoken with them. It does not replace a formal warning or a leave request."
       }
     },
     "visualiser": {
       "header": {
         "title": "Competitor Overview",
-        "description": "Search the map or follow a rep’s route. Open Simulate to model a catchment."
+        "description": "Competitor Overview is the map of branches, headquarters, competitors, and clients. Search the map or follow a rep's route. Open Simulate to model a catchment and see what the area could support. Geofences you created are drawn here as well. The map reads saved locations. It does not edit a client record."
       },
       "tools": {
         "title": "Map tools",
-        "description": "Summary counts competitor stores and modelled monthly turnover. Petrol prices loads the latest fuel prices and keeps stored prices when nothing changed. Geocode fills missing addresses. Export downloads the simulation. The info icon explains the maths. Simulate opens the simulation dialog."
+        "description": "Summary counts competitor stores and modelled monthly turnover. Petrol prices loads the latest fuel prices and keeps stored prices when nothing changed. Geocode fills missing addresses so pins can be placed. Export downloads the simulation. The info icon explains the maths. Simulate opens the simulation dialog, and the result stays a model until you export or save it from that dialog."
       },
       "map": {
         "title": "The map",
-        "description": "Pins are branches, HQ, competitors, and clients."
+        "description": "Pins are branches, headquarters, competitors, and clients. Select a pin to read what it is. A missing pin usually means the address was not geocoded yet. Use Geocode in the tools when addresses are empty. Routes and simulations draw on top of these pins. They do not move a client's saved address."
       }
     }
   },

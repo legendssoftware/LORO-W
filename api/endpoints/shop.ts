@@ -51,11 +51,22 @@ export async function createShopQuotation(
 export async function updateShopQuotationForClient(
   client: AxiosInstance,
   quotationId: number,
-  payload: Record<string, unknown>
-): Promise<{ message?: string }> {
-  const { data } = await client.put<{ message?: string }>(
+  payload: CreateQuotationPayload
+): Promise<{ success?: boolean; message?: string }> {
+  const { data } = await client.put<{ success?: boolean; message?: string }>(
     `/shop/quotation/${quotationId}/client`,
     payload
+  );
+  return data;
+}
+
+/** POST /shop/quotation/:id/client/cancel — client cancels an order they own. */
+export async function cancelShopQuotationForClient(
+  client: AxiosInstance,
+  quotationId: number
+): Promise<{ success?: boolean; message?: string }> {
+  const { data } = await client.post<{ success?: boolean; message?: string }>(
+    `/shop/quotation/${quotationId}/client/cancel`
   );
   return data;
 }

@@ -864,8 +864,8 @@
       "title": "Planificación",
       "description": "Planifique el trabajo de campo, las rutas y los seguimientos en un solo lugar.",
       "routeTitle": "Cómo funciona la planificación de rutas",
-      "routeNote": "Cada noche la importación ERP asigna clientes al comercial con el mismo código de ventas y reserva visitas de días laborables para las cuatro semanas siguientes. Cada día queda en una zona cercana (unos 40 km), hasta 10 clientes, en orden de conducción. Una zona más llena continúa al día siguiente antes de una zona más lejana. Los clientes que ya tienen visita desde hoy hasta esa ventana se mantienen. Los clientes sin dirección en el mapa se omiten. Todas las tareas incluye esos días. Abra Rutas y elija el día planificado.",
-      "routeEmpty": "No hay rutas para este día. Elija el día en que se planificaron las visitas. Cada comercial necesita una sucursal con coordenadas, y las paradas de ese día quedan en una ruta."
+      "routeNote": "Cada noche la importación ERP asigna clientes al comercial con el mismo código de ventas y reserva visitas de días laborables para las cuatro semanas siguientes. Cada día queda en una zona cercana (unos 40 km), hasta 10 clientes, en orden de conducción. Una zona más llena continúa al día siguiente antes de una zona más lejana. Los clientes que ya tienen visita desde hoy hasta esa ventana se mantienen. Los clientes sin dirección en el mapa se omiten, así que añada una ubicación antes de esperarlos en una ruta. Todas las tareas incluye esos días. Abra Rutas, elija el día planificado y use Recalcular cuando ese día deba reconstruirse. El botón de información de esta página abre la misma explicación.",
+      "routeEmpty": "No hay rutas para este día. Elija el día en que se planificaron las visitas, no un día vacío más adelante. Cada comercial necesita una sucursal con coordenadas, y las paradas de ese día quedan en una ruta. Si la lista sigue vacía, revise el pin de la sucursal y que la importación ERP nocturna haya corrido."
     },
     "pipeline": {
       "title": "Pipeline",
@@ -974,7 +974,7 @@
     },
     "orders": {
       "title": "Pedidos",
-      "description": "Siga cotizaciones y pedidos por estado"
+      "description": "Vea los pedidos que hizo, abra el detalle y edítelos o cancélelos mientras sigan abiertos."
     },
     "store": {
       "title": "Tienda",
@@ -994,691 +994,715 @@
     "leave": {
       "header": {
         "title": "Ausencias",
-        "description": "Solicita tiempo libre, filtra la bandeja y luego aprueba, rechaza o cancela una solicitud."
+        "description": "Esta bandeja es donde se solicita y se decide el tiempo libre. Puedes pedir una ausencia y seguirla hasta que alguien la apruebe, la rechace o la cancele. Los responsables ven las solicitudes que pueden decidir. Tus propias solicitudes siguen visibles incluso cuando solo gestionas tus propias ausencias."
       },
       "actions": {
         "title": "Solicitar ausencia",
-        "description": "Haz clic en Solicitar ausencia. Elige el tipo y las fechas, luego envíala para decisión."
+        "description": "Haz clic en Solicitar ausencia para empezar una solicitud nueva. Elige el tipo de ausencia y las fechas, luego envíala para una decisión. La solicitud aparece en esta bandeja en cuanto se envía. No queda aprobada hasta que alguien con acceso actúe sobre ella."
       },
       "filters": {
         "title": "Filtrar la bandeja",
-        "description": "Acota por estado, persona e intervalo de fechas. Tus propias solicitudes siguen visibles cuando solo ves tus ausencias."
+        "description": "Acota la lista por estado, persona e intervalo de fechas. Úsalo cuando la bandeja es larga y solo quieres un tipo de solicitud. Borrar un filtro devuelve la lista más amplia. Si solo ves tus propias ausencias, tus solicitudes siguen a la vista."
       },
       "content": {
         "title": "Abrir una solicitud",
-        "description": "El gráfico cuenta las solicitudes por estado. Haz clic en una fila para aprobarla, rechazarla o cancelarla."
+        "description": "El gráfico cuenta las solicitudes por estado para que veas la mezcla antes de abrir una fila. Haz clic en una fila para leer las fechas y el motivo. Desde ahí puedes aprobar, rechazar o cancelar, según tu acceso. El estado de la fila se actualiza después de guardar la decisión."
       }
     },
     "warnings": {
       "header": {
         "title": "Apercibimientos",
-        "description": "Apercibimientos de la organización. Un apercibimiento creado en el perfil de un empleado también aparece aquí."
+        "description": "Esta es la lista de apercibimientos formales de la organización. Un apercibimiento creado en el perfil de un empleado también aparece aquí, así que no tienes que abrir a cada persona para encontrarlo. Usa la lista para revisar qué se registró y a quién concierne. Eliminar un apercibimiento aquí lo quita de la lista compartida."
       },
       "actions": {
         "title": "Emitir apercibimiento",
-        "description": "Haz clic en Emitir apercibimiento. Registra la persona, el motivo y el estado."
+        "description": "Haz clic en Emitir apercibimiento para registrar un apercibimiento nuevo. Elige a la persona, escribe el motivo y define el estado. El apercibimiento se guarda en esta lista y también se muestra en el perfil de personal de esa persona. Solo quienes pueden gestionar apercibimientos ven este botón."
       },
       "filters": {
         "title": "Filtrar por estado",
-        "description": "Muestra todos los apercibimientos, o solo un estado."
+        "description": "Muestra todos los apercibimientos, o quédate solo con un estado. La lista de abajo se actualiza en cuanto cambias el filtro. Usa Todos cuando quieras el historial completo otra vez. El estado aquí es el estado propio del apercibimiento, no la asistencia de la persona."
       },
       "content": {
         "title": "Revisar un apercibimiento",
-        "description": "Haz clic en una fila para leerlo o eliminarlo."
+        "description": "Cada fila es un apercibimiento, con la persona y el motivo. Haz clic en una fila para leer el registro completo. Puedes eliminarlo desde ahí cuando te esté permitido. La fila sale de la lista después de eliminarla."
       }
     },
     "documents": {
       "header": {
         "title": "Documentos",
-        "description": "Lista, descarga y adjunta documentos a una persona."
+        "description": "Esta página lista los archivos adjuntos a personas de la organización. Puedes encontrar un documento, descargarlo o adjuntar un archivo nuevo a una persona. El archivo sigue vinculado a esa persona después de guardarlo. Usa Personal si necesitas el resto de su perfil."
       },
       "actions": {
         "title": "Adjuntar documento",
-        "description": "Haz clic en Adjuntar documento. Sube el archivo y vincúlalo a una persona."
+        "description": "Haz clic en Adjuntar documento para subir un archivo y vincularlo a una persona. Elige a la persona y el archivo, luego guarda. La fila nueva aparece en la lista cuando termina la subida. El archivo no queda adjunto hasta que completes ese guardado."
       },
       "filters": {
         "title": "Filtrar por título",
-        "description": "Escribe parte de un título para acortar la lista."
+        "description": "Escribe parte de un título para acortar la lista. La coincidencia empieza mientras escribes, así que no necesitas el nombre completo. Borra el campo para ver todos los documentos otra vez. El filtro mira el título, no el contenido del archivo."
       },
       "content": {
         "title": "Descargar un archivo",
-        "description": "Cada fila es un documento. Descárgalo desde la fila."
+        "description": "Cada fila es un documento vinculado a una persona. Descargar guarda ese archivo en tu dispositivo. Abre la fila si necesitas ver a quién pertenece. La descarga usa el archivo que se subió, no una copia nueva generada aquí."
       }
     },
     "feedback": {
       "header": {
         "title": "Comentarios",
-        "description": "La bandeja, los conteos por estado y las actualizaciones de estado. La caducidad del token está en Ajustes."
+        "description": "Esta bandeja guarda los comentarios enviados a la organización, con un conteo por cada estado. Puedes ver qué hay nuevo, en revisión, resuelto o cerrado, y luego actualizar una fila. La caducidad del token de los enlaces de comentarios se queda en Ajustes, no en esta página. Resolver una fila no borra el mensaje original."
       },
       "filters": {
         "title": "Filtrar por estado",
-        "description": "Muestra todos los comentarios, o solo Nuevo, En revisión, Resuelto o Cerrado."
+        "description": "Muestra todos los comentarios, o solo Nuevo, En revisión, Resuelto o Cerrado. La lista y el gráfico siguen el estado que eliges. Usa Todos cuando quieras la bandeja completa otra vez. Una fila se queda en su estado hasta que alguien lo cambie."
       },
       "content": {
         "title": "Resolver comentarios",
-        "description": "El gráfico cuenta cada estado. Haz clic en Resolver en una fila para marcarlo como resuelto."
+        "description": "El gráfico cuenta cada estado para que veas la carga antes de abrir una fila. Haz clic en Resolver en una fila para marcar ese elemento como resuelto. El conteo pasa del estado anterior a Resuelto después de guardar la actualización. Cerrado es un estado aparte si necesitas cerrarlo más tarde."
       }
     },
     "geofences": {
       "header": {
         "title": "Geocercas",
-        "description": "Crea áreas y revisa eventos de entrada. Las mismas áreas se dibujan en Resumen de competidores."
+        "description": "Una geocerca es un área con nombre en el mapa, con un centro y un radio. Crea áreas aquí y luego revisa los eventos de entrada que registran. Las mismas áreas se dibujan en Resumen de competidores, así que un cambio aquí se ve en ese mapa. Un área que aún no tiene eventos sigue en la lista."
       },
       "actions": {
         "title": "Nueva área",
-        "description": "Haz clic en Nueva área. Define el nombre, la latitud, la longitud y el radio en metros."
+        "description": "Haz clic en Nueva área para añadir una geocerca. Define el nombre, la latitud, la longitud y el radio en metros. Guárdala y el área queda disponible para el seguimiento de entradas y para el mapa. El radio es la distancia desde el centro, no un tiempo de conducción."
       },
       "content": {
         "title": "Abrir un área",
-        "description": "Haz clic en una fila para editar el área o ver cuántos eventos de entrada registró."
+        "description": "Haz clic en una fila para editar el nombre, el centro o el radio. El mismo diálogo muestra cuántos eventos de entrada ha registrado esa área. Guardar escribe el límite nuevo. Los eventos ya registrados siguen adjuntos a esta área."
       }
     },
     "usage": {
       "header": {
         "title": "Uso",
-        "description": "Analíticas, resúmenes y uso de licencias. El servidor registra los eventos."
+        "description": "Esta página muestra cómo la organización usa LORO: volumen de solicitudes, resúmenes y la licencia. El servidor registra los eventos por sí mismo, así que no hay nada que importar. Úsala para ver la actividad y si la licencia está cerca de su límite. Es un informe de uso, no un lugar para cambiar ajustes."
       },
       "content": {
         "title": "Leer los últimos 30 días",
-        "description": "El gráfico es el volumen de solicitudes. Debajo, la línea de licencia muestra errores y cuota, y la lista son solicitudes por endpoint."
+        "description": "El gráfico es el volumen de solicitudes de los últimos 30 días. Debajo, la línea de licencia muestra errores y cuánta cuota se ha usado. La lista desglosa las solicitudes por endpoint, para que veas qué partes de la app se llaman más. Las cifras se actualizan desde el servidor. No se editan en esta página."
       }
     },
     "products": {
       "header": {
         "title": "Productos",
-        "description": "Crea, edita, archiva, restaura y revisa los precios del catálogo."
+        "description": "Este es el catálogo de productos: nombres, precios y si un artículo está activo. Puedes crear un producto, editarlo, archivarlo o restaurarlo. Los precios que se muestran aquí son los precios de catálogo que se usan cuando se arman cotizaciones. Archivar oculta un producto del uso nuevo sin borrar su historial."
       },
       "actions": {
         "title": "Nuevo producto",
-        "description": "Haz clic en Nuevo producto. Introduce el nombre y el precio y guárdalo en el catálogo."
+        "description": "Haz clic en Nuevo producto para añadir un artículo al catálogo. Introduce el nombre y el precio, luego guarda. El producto aparece en la lista y se puede elegir cuando se arma una cotización. No está en el catálogo hasta que ese guardado termina."
       },
       "content": {
         "title": "Editar un producto",
-        "description": "Haz clic en una fila para cambiar el nombre o el precio. Guardar precios actuales escribe los precios en pantalla."
+        "description": "Haz clic en una fila para cambiar el nombre o el precio, o para archivarlo y restaurarlo después. Guardar precios actuales escribe los precios que ves en pantalla para las filas a la vista. Un cambio de precio se aplica a las cotizaciones nuevas. No reescribe las cotizaciones que ya se emitieron."
       }
     },
     "news": {
       "header": {
         "title": "Noticias",
-        "description": "Anuncios de la organización."
+        "description": "Noticias es el tablón de anuncios de la organización. Las publicaciones que publicas aquí son lo que la gente ve como noticias de la empresa. Escribe un anuncio nuevo o abre uno existente para corregirlo. Una publicación es visible después de guardarla. El texto en borrador del formulario no se publica hasta ese guardado."
       },
       "actions": {
         "title": "Nueva publicación",
-        "description": "Haz clic en Nueva publicación. Escribe el título y el anuncio y guárdalo."
+        "description": "Haz clic en Nueva publicación para escribir un anuncio. Añade el título y el mensaje, luego guarda. La publicación se une a esta lista y es el anuncio que la gente puede leer. Cerrar el formulario sin guardar descarta el texto que escribiste."
       },
       "content": {
         "title": "Editar una publicación",
-        "description": "Haz clic en una fila para cambiar ese anuncio."
+        "description": "Haz clic en una fila para cambiar ese anuncio. Actualiza el título o el mensaje, luego guarda. La lista muestra la versión guardada, no el texto que todavía está en el formulario. Quien lee las noticias ve la publicación después del guardado, no mientras todavía la estás editando."
       }
     },
     "sales-tips": {
       "header": {
         "title": "Consejos de ventas",
-        "description": "Edita el catálogo. Inicio sigue mostrando el consejo del día."
+        "description": "Este es el catálogo de consejos de ventas. Inicio sigue mostrando un consejo del día de esta lista, así que una edición aquí cambia lo que se le puede mostrar a la gente. Añade un consejo o abre uno para reescribirlo. El consejo del día se elige entre los consejos guardados, no de un formulario sin guardar."
       },
       "actions": {
         "title": "Nuevo consejo",
-        "description": "Haz clic en Nuevo consejo. Añade un título y el texto del consejo."
+        "description": "Haz clic en Nuevo consejo para añadir un consejo al catálogo. Introduce un título y el texto del consejo, luego guarda. El consejo se une a esta lista y queda disponible como consejo del día en Inicio. No está en el catálogo hasta que guardes."
       },
       "content": {
         "title": "Editar un consejo",
-        "description": "Haz clic en una fila para actualizar ese consejo."
+        "description": "Haz clic en una fila para actualizar ese consejo. Cambia el título o el texto, luego guarda. Inicio usa la redacción guardada la próxima vez que elige este consejo. El texto que todavía no has guardado se queda solo en el formulario."
       }
     },
     "resellers": {
       "header": {
         "title": "Distribuidores",
-        "description": "Añade, edita, archiva y restaura registros de distribuidores."
+        "description": "Esta lista es el registro de distribuidores. Puedes añadir un distribuidor, editar el registro, archivar uno que ya no uses o restaurar un registro archivado. Archivar conserva el historial y saca al distribuidor del uso activo. Un registro restaurado vuelve a la lista activa."
       },
       "actions": {
         "title": "Nuevo distribuidor",
-        "description": "Haz clic en Nuevo distribuidor. Empieza el registro con un nombre y guarda los detalles."
+        "description": "Haz clic en Nuevo distribuidor para empezar un registro. Empieza por el nombre, luego completa los detalles y guarda. El distribuidor aparece en esta lista después del guardado. Cerrar el formulario sin guardar no crea un registro."
       },
       "content": {
         "title": "Abrir un distribuidor",
-        "description": "Haz clic en una fila para editar, archivar o restaurar ese distribuidor."
+        "description": "Haz clic en una fila para editar ese distribuidor, archivarlo o restaurarlo. Guardar escribe los detalles que cambiaste. Archivar lo oculta del uso activo y deja el registro antiguo en su sitio. Restaurar devuelve un distribuidor archivado a la lista activa."
       }
     },
     "rewards": {
       "header": {
         "title": "Recompensas",
-        "description": "El ranking de XP y la posición de cada persona."
+        "description": "Recompensas es el ranking de XP de la organización. Puedes ver quién está arriba y dónde queda una persona. El XP se gana con la actividad en LORO. Esta página lee el ranking. No es donde concedes puntos a mano."
       },
       "content": {
         "title": "Leer el ranking",
-        "description": "El gráfico es lo alto del ranking. La lista debajo es el XP de cada persona."
+        "description": "El gráfico es lo alto del ranking, para que los líderes sean fáciles de comparar. La lista de debajo es el XP de cada persona, incluidas las que no están en el gráfico. Úsalo para ver la posición, no para editar una puntuación. Las cifras siguen el XP que ya está registrado."
       }
     },
     "loyalty": {
       "header": {
         "title": "Fidelización",
-        "description": "Perfiles, el catálogo de recompensas y el historial de canjes."
+        "description": "Fidelización guarda el catálogo de recompensas, quién puede canjear y el historial de canjes. Puedes añadir una recompensa y luego registrar un canje de ese catálogo. El historial bajo la lista son las transacciones y las difusiones ya guardadas. Un canje usa una recompensa que existe en el catálogo."
       },
       "content": {
         "title": "Añadir y canjear recompensas",
-        "description": "Escribe el nombre de una recompensa y haz clic en Añadir recompensa. Canjear usa una recompensa del catálogo. La línea bajo la lista es el historial de transacciones y difusión."
+        "description": "Escribe el nombre de una recompensa y haz clic en Añadir recompensa para ponerla en el catálogo. Canjear usa una de esas recompensas del catálogo y la registra para la persona. La línea bajo la lista es el historial de transacciones y difusión, para que veas lo que ya se entregó. Un canje se guarda cuando lo confirmas, no cuando solo escribes el nombre."
       }
     },
     "claims": {
       "header": {
         "title": "Gastos",
-        "description": "Envía gastos, adjunta recibos y sigue cada solicitud desde la aprobación hasta el pago."
-      },
-      "summary": {
-        "title": "Totales por etapa",
-        "description": "Haz clic en Total, Pendiente, Aprobado, Rechazado o Pagado. La lista de abajo sigue esa etapa."
+        "description": "Gastos es donde se envían, se aprueban y se pagan los gastos. Adjunta un recibo y luego sigue el gasto desde el primer envío, pasando por la decisión, hasta el pago. Puedes buscar en la lista, exportarla o abrir un gasto para ver el recibo y el estado. Un gasto se queda en su etapa actual hasta que alguien lo mueve."
       },
       "toolbar": {
         "title": "Buscar, exportar y crear",
-        "description": "Filtra por fecha, grupo, moneda o persona. Exportar descarga una hoja de cálculo. Nuevo gasto inicia un envío."
+        "description": "Filtra por fecha, carpeta, moneda o persona. El control de estado sigue una etapa: Total, Pendiente, Aprobada, Rechazada o Pagada, y la lista de abajo muestra solo esa etapa. Exportar descarga una hoja de cálculo de los gastos a la vista. Nuevo gasto inicia un envío. No se envía nada hasta que envíes el formulario con el recibo."
       },
       "folders": {
         "title": "Carpetas de gastos",
-        "description": "Haz clic en una carpeta para mostrar solo los gastos de ese grupo."
+        "description": "Las carpetas agrupan gastos para que un equipo pueda mantener junto un tipo de gasto. Haz clic en una carpeta para mostrar solo los gastos de ese grupo. La lista sigue la carpeta que eliges. Elige otra vez la vista más amplia cuando quieras todas las carpetas."
       },
       "list": {
         "title": "Abrir un gasto",
-        "description": "Los gastos están agrupados. Haz clic en uno para seguir el recibo, la decisión y el pago."
+        "description": "Los gastos están agrupados, así que los envíos relacionados quedan juntos. Haz clic en uno para seguir el recibo, la decisión y el pago. La etapa que filtraste en la barra es el conjunto de filas que ves aquí. El estado de pago se actualiza después de procesar el gasto, no cuando solo lo abres."
       }
     },
     "iot": {
       "header": {
         "title": "Dispositivos IoT",
-        "description": "Hardware conectado y dispositivos de acceso, organizados por sucursal."
+        "description": "Este es el registro del hardware conectado y de los dispositivos de acceso. Los dispositivos se organizan por sucursal, para que veas qué hay en cada una. Abre una tarjeta para inspeccionar un dispositivo, o añade uno cuando se instala hardware nuevo. Un dispositivo no está en la lista hasta que se guarda su registro."
       },
       "toolbar": {
         "title": "Filtrar dispositivos",
-        "description": "Filtra por estado, tipo o sucursal y busca por id, etiqueta o ubicación."
+        "description": "Filtra por estado, tipo o sucursal, y luego busca por id, etiqueta o ubicación. La cuadrícula muestra solo los dispositivos que coinciden. Borra los filtros para ver el registro completo otra vez. La búsqueda mira esos identificadores, no las notas enterradas dentro de un dispositivo."
       },
       "add": {
         "title": "Añadir dispositivo",
-        "description": "Haz clic en Añadir dispositivo. Registra el hardware y la sucursal a la que pertenece."
+        "description": "Haz clic en Añadir dispositivo para registrar hardware nuevo. Introduce el dispositivo y la sucursal a la que pertenece, luego guarda. La tarjeta aparece en la cuadrícula de esa sucursal. El dispositivo no se sigue aquí hasta que se guarda el registro."
       },
       "grid": {
         "title": "Abrir un dispositivo",
-        "description": "Haz clic en una tarjeta para inspeccionar o editar ese dispositivo."
+        "description": "Cada tarjeta es un dispositivo en una sucursal. Haz clic en una tarjeta para inspeccionarlo o editar el registro. Los cambios se aplican después de guardarlos en el dispositivo. Los filtros de arriba siguen limitando qué tarjetas hay en pantalla."
       }
     },
     "approvals": {
       "header": {
         "title": "Aprobaciones",
-        "description": "Filtra por estado o tipo, presenta una solicitud general con Nueva solicitud y abre una tarjeta para aprobar o rechazar. Los formularios de incorporación se abren desde la misma tarjeta; al aprobar se disparan webhooks salientes."
+        "description": "Aprobaciones es la cola de solicitudes que necesitan una decisión. Filtra por estado o tipo, presenta una solicitud general con Nueva solicitud y luego abre una tarjeta para aprobar o rechazar. Los formularios de incorporación se abren desde la misma tarjeta. Cuando una solicitud se aprueba, se disparan webhooks salientes para las integraciones que escuchan ese evento."
       },
       "toolbar": {
         "title": "Filtrar y Nueva solicitud",
-        "description": "Filtra por estado o tipo. Nueva solicitud presenta una aprobación general. Mis solicitudes muestra las que enviaste."
+        "description": "Filtra por estado o tipo para que la cola muestre un tipo de solicitud. Nueva solicitud presenta una aprobación general y la añade a la cola. Mis solicitudes muestra las que enviaste, lo que sirve cuando esperas una decisión. La lista se actualiza con el filtro. Una solicitud nueva queda presentada cuando la envías."
       },
       "list": {
         "title": "Abrir una tarjeta",
-        "description": "Abre una tarjeta para aprobar o rechazar. Los formularios de incorporación se abren desde la misma tarjeta. Al aprobar, se disparan webhooks salientes."
+        "description": "Abre una tarjeta para aprobar o rechazar esa solicitud. Los formularios de incorporación se abren desde la misma tarjeta cuando la solicitud usa uno. Aprobar guarda la decisión y puede disparar webhooks salientes. Rechazar registra la decisión sin tratar la solicitud como aprobada."
       }
     },
     "payslips": {
       "header": {
         "title": "Nóminas",
-        "description": "Consulta y descarga tus documentos de nómina."
-      },
-      "import": {
-        "title": "Importar desde el almacenamiento",
-        "description": "Previsualiza la importación del almacenamiento y confírmala. Solo quienes pueden importar nóminas ven esto."
+        "description": "Nóminas lista los documentos de nómina disponibles para ti. Puedes ver una nómina en pantalla o descargar el archivo. La lista puede cubrir todo el periodo, o un intervalo de fechas y un estado que elijas. Esta página lee documentos que ya existen. No es la ejecución de la nómina en sí."
       },
       "filters": {
         "title": "Filtrar nóminas",
-        "description": "La lista empieza en todo el tiempo. Cambia a un intervalo de fechas o un estado para acotarla."
+        "description": "La lista empieza en todo el periodo, así que las nóminas más antiguas están incluidas hasta que la acotes. Cambia a un intervalo de fechas o a un estado cuando quieras un conjunto más pequeño. La tabla de abajo sigue ese filtro. Bórralo para volver a la lista completa."
       },
       "table": {
         "title": "Ver o descargar",
-        "description": "Ver abre la nómina. Descargar guarda el archivo. El tamaño de página bajo la tabla define cuántas filas se cargan."
+        "description": "Cada fila es una nómina. Ver la abre en pantalla. Descargar guarda el archivo en tu dispositivo. El tamaño de página bajo la tabla define cuántas filas se cargan a la vez. El archivo es la nómina guardada, no un cálculo nuevo hecho en esta página."
       }
     },
     "competitors": {
       "header": {
         "title": "Competidores",
-        "description": "Sigue a los rivales, los niveles de amenaza y las ubicaciones junto a tus clientes."
+        "description": "Competidores es el registro de rivales que sigues junto a tus clientes. Cada registro puede llevar un nivel de amenaza, si el rival es directo o indirecto, y una ubicación. Añade uno a mano o importa una hoja de cálculo. Las mismas ubicaciones se pueden ver con tus sucursales en Resumen de competidores."
       },
       "toolbar": {
         "title": "Filtrar y buscar",
-        "description": "Filtra por estado, directo o indirecto y nivel de amenaza. Busca por nombre."
+        "description": "Filtra por estado, directo o indirecto, y nivel de amenaza. Busca por nombre cuando ya conoces al rival. La cuadrícula muestra solo las coincidencias. Borra los filtros para ver el registro completo otra vez."
       },
       "add": {
         "title": "Añadir competidor",
-        "description": "Haz clic en Añadir competidor, o en Importar para traer una hoja de cálculo. Ambos llegan a esta cuadrícula."
+        "description": "Haz clic en Añadir competidor para crear un registro, o en Importar para traer una hoja de cálculo. Ambos llegan a esta cuadrícula después de guardarse. Revisa una importación antes de fiarte de la amenaza y de la ubicación. Una fila no está en el registro hasta que termina el alta o la importación."
       },
       "grid": {
         "title": "Abrir un competidor",
-        "description": "Haz clic en una tarjeta para la amenaza, la ubicación, y editar o eliminar cuando gestionas la lista."
+        "description": "Haz clic en una tarjeta para la amenaza, la ubicación y el resto del registro. Cuando gestionas la lista puedes editarlo o eliminarlo desde ahí. Eliminar quita a ese rival del registro. El mapa usa la ubicación guardada en la tarjeta."
       }
     },
     "takeoff": {
       "header": {
         "title": "Medición del sistema",
-        "description": "Mide un techo o un tabique. Las cantidades se calculan en el servidor y se emiten como cotización."
+        "description": "Una medición mide un techo o un tabique para un trabajo. Nombras el trabajo y el cliente, y luego mides. Las cantidades se calculan en el servidor, y el resultado se puede emitir como cotización. La lista muestra el estado y el total de cada medición. Se sigue midiendo dentro de la medición, no en esta lista."
       },
       "create": {
         "title": "Nueva medición",
-        "description": "Haz clic en Nueva medición. Nombra el trabajo y el cliente y ábrelo para medir."
+        "description": "Haz clic en Nueva medición para empezar un trabajo. Nombra el trabajo y el cliente, luego ábrelo para medir. La medición nueva aparece en la lista una vez creada. Las cantidades siguen vacías hasta que mides dentro de esa medición."
       },
       "list": {
         "title": "Abrir una medición",
-        "description": "Haz clic en una referencia para seguir midiendo y emitir la cotización. El estado y el total permanecen en esta fila."
+        "description": "Haz clic en una referencia para seguir midiendo y, cuando esté lista, emitir la cotización. El estado y el total se quedan en esta fila para que veas el avance sin abrirla. La cotización usa las cantidades que calculó el servidor. Emitirla no ocurre solo desde la fila."
       }
     },
     "deliveries": {
       "header": {
         "title": "Entregas",
-        "description": "Asigna un pedido de venta ERP abierto a un conductor, filtra la lista y abre una fila para la ruta y la prueba de entrega."
+        "description": "Entregas asigna un pedido de venta ERP abierto a un conductor y sigue la parada. Filtra la lista, asigna una entrega y luego abre una fila para la ruta y la prueba de entrega firmada (POD). El pedido viene del ERP. La asignación y el POD son lo que registras aquí."
       },
       "toolbar": {
         "title": "Filtrar entregas",
-        "description": "Filtra por día, estado, conductor o búsqueda. El tamaño de página bajo la tabla define cuántas filas se cargan."
+        "description": "Filtra por día, estado, conductor o búsqueda para que la tabla muestre una parte del trabajo. El tamaño de página bajo la tabla define cuántas filas se cargan. La lista sigue el filtro de inmediato. Bórralo cuando quieras todas las entregas del conjunto más amplio otra vez."
       },
       "assign": {
         "title": "Asignar entrega",
-        "description": "Haz clic en Asignar entrega. Elige un pedido de venta ERP abierto y el conductor que hará la parada."
+        "description": "Haz clic en Asignar entrega para dar una parada a un conductor. Elige un pedido de venta ERP abierto y el conductor que lo hará, luego guarda. La entrega aparece en la lista de ese conductor y de ese día. No queda asignada hasta que confirmes el formulario."
       },
       "list": {
         "title": "Abrir una entrega",
-        "description": "Haz clic en una fila para la ruta y la prueba de entrega firmada (POD)."
+        "description": "Haz clic en una fila para la ruta y la prueba de entrega firmada (POD). Úsala para ver si la parada sigue abierta o ya está completada. El POD es el registro firmado de esa entrega. Editar la ruta no cambia el pedido de venta ERP original."
       }
     },
     "store-operations": {
       "header": {
         "title": "Operaciones de tienda",
-        "description": "Aperturas de sucursales en directo, listas de comprobación y conteos de stock en todas las tiendas."
+        "description": "Operaciones de tienda es la vista en directo de aperturas de sucursales, listas de comprobación y conteos de stock en todas las tiendas. Resumen es el tablero de hoy. Detalles es la lista más larga tienda por tienda. Las cifras siguen el país, la región y el periodo que defines. Una tienda que todavía no ha abierto sigue apareciendo para que veas que falta."
       },
       "tabs": {
         "title": "Resumen y detalles",
-        "description": "Resumen es el tablero en directo. Detalles es la lista más larga tienda por tienda."
+        "description": "Resumen es el tablero en directo: totales en los que puedes hacer clic, y luego las tiendas de esa porción. Detalles es la lista más larga tienda por tienda cuando necesitas más que el tablero. Cambiar de pestaña no cambia el país, la región ni el periodo. Usa Detalles cuando el tablero queda demasiado compacto."
       },
       "filters": {
         "title": "Acotar las tiendas",
-        "description": "Filtra por país, región y periodo. Funciones abre las herramientas extra de operaciones de tienda."
+        "description": "Filtra por país, región y periodo para que el tablero coincida con las tiendas que quieres. Funciones abre las herramientas extra de operaciones de tienda. Los totales y la lista de tiendas siguen estos filtros. Una tienda fuera del filtro sigue oculta hasta que lo amplíes."
       },
       "summary": {
         "title": "Haz clic en un total",
-        "description": "Cada tarjeta es una porción del día: todas las tiendas, abiertas a tiempo, tarde, omitidas, cerradas a tiempo o listas completadas. Haz clic en una para conservar solo esas tiendas."
+        "description": "Cada tarjeta es una porción del día: todas las tiendas, abiertas a tiempo, tarde, omitidas, cerradas a tiempo o listas completadas. Haz clic en una para conservar solo esas tiendas en la lista. Haz clic en el total más amplio para ver todas las tiendas del filtro otra vez. Las tarjetas cuentan el periodo actual, no otro mes."
       },
       "stores": {
         "title": "Estado de la tienda",
-        "description": "Cada fila es la apertura y la lista de comprobación de una sucursal ahora mismo. Ábrela para la sesión de esa tienda."
+        "description": "Cada fila es la apertura y la lista de comprobación de una sucursal ahora mismo. Ábrela para la sesión de esa tienda, incluido lo que se completó y lo que sigue abierto. La fila sigue el total en el que hiciste clic arriba. Los conteos de stock y las respuestas de la lista viven en la sesión, no en la tarjeta de resumen."
       }
     },
     "store": {
       "header": {
         "title": "Tienda",
-        "description": "Explora productos, añádelos al carrito y envía una cotización."
+        "description": "La tienda es el catálogo del que compras. Explora productos, añádelos a tu carrito y envía ese carrito como cotización. Busca o filtra cuando el catálogo es largo. La cotización se crea cuando envías el carrito, no cuando solo abres un producto."
       },
       "toolbar": {
         "title": "Buscar y carrito",
-        "description": "Busca o filtra por categoría. El carrito guarda las líneas que enviarás como cotización."
+        "description": "Busca o filtra por categoría para encontrar un producto. El carrito guarda las líneas que enviarás como cotización. Cambia las cantidades en el carrito antes de enviarlo. Salir de la página no envía la cotización por ti."
       },
       "catalogue": {
         "title": "Añadir un producto",
-        "description": "Haz clic en un producto para añadirlo al carrito. Cargar más trae la página siguiente del catálogo."
+        "description": "Haz clic en un producto para añadirlo al carrito. Cargar más trae la página siguiente del catálogo cuando la lista es más larga que una página. El carrito se actualiza a medida que añades líneas. Esas líneas se convierten en cotización solo después de que envías el carrito."
       }
     },
     "orders": {
       "header": {
         "title": "Pedidos",
-        "description": "Sigue cotizaciones y pedidos por estado."
+        "description": "Pedidos sigue cotizaciones y pedidos por estado, desde la primera cotización hasta un pedido completado. El tablero son columnas, y cada tarjeta es una cotización o un pedido. Abre una tarjeta para el detalle. Nuevo pedido te lleva a la tienda para armar la siguiente cotización."
       },
       "create": {
         "title": "Nuevo pedido",
-        "description": "Haz clic en Nuevo pedido. Eso abre la tienda para construir la siguiente cotización."
+        "description": "Haz clic en Nuevo pedido. Eso abre la tienda para que armes la siguiente cotización y la envíes. La tarjeta nueva aparece en este tablero después de enviar la cotización. Hacer clic en el botón no crea un pedido vacío por sí solo."
       },
       "board": {
         "title": "Abrir un pedido",
-        "description": "Las columnas son los estados de cotización y pedido. Haz clic en una tarjeta para el detalle."
+        "description": "Las columnas son los estados de cotización y de pedido, para que veas qué está en espera y qué ya avanzó. Haz clic en una tarjeta para el detalle, incluidas las líneas y el estado actual. Avanzar el trabajo actualiza la columna después de guardar el estado. Una tarjeta se queda en su columna hasta que eso ocurre."
       }
     },
     "projects": {
       "header": {
         "title": "Proyectos",
-        "description": "Gestiona tus proyectos, crea nuevos y sigue su progreso."
+        "description": "Proyectos es donde guardas trabajos, creas otros nuevos y ves hasta dónde ha llegado cada uno. Un proyecto empieza con un nombre y luego reúne su avance en la tarjeta. Abre una tarjeta para el detalle. Crear un proyecto solo añade el registro. No programa visitas ni tareas por sí solo."
       },
       "create": {
         "title": "Crear proyecto",
-        "description": "Haz clic en Crear proyecto. Nómbralo y aparece en esta cuadrícula."
+        "description": "Haz clic en Crear proyecto, nómbralo y guarda. El proyecto aparece en esta cuadrícula. Puedes abrirlo después para añadir el resto del detalle. Cerrar el formulario sin guardar no añade una tarjeta."
       },
       "filters": {
         "title": "Filtrar proyectos",
-        "description": "Busca por nombre o descripción, o quédate con un estado."
+        "description": "Busca por nombre o descripción, o quédate con un estado. La cuadrícula muestra solo los proyectos que coinciden. Borra la búsqueda y el estado cuando quieras el conjunto completo otra vez. El filtro no cambia el estado de un proyecto. Solo oculta filas."
       },
       "grid": {
         "title": "Abrir un proyecto",
-        "description": "Haz clic en una tarjeta para el progreso y el detalle del proyecto."
+        "description": "Haz clic en una tarjeta para el avance y el detalle del proyecto. Actualiza el proyecto desde esa pantalla y vuelve aquí para ver la tarjeta. El estado de la tarjeta sigue lo que se guardó. Las ediciones sin guardar dentro del proyecto se quedan ahí hasta que las guardes."
       }
     },
     "account": {
       "header": {
         "title": "Cuenta",
-        "description": "El perfil de tu empresa, el crédito y los datos de contacto."
+        "description": "Cuenta es el perfil de tu empresa: quién eres, cómo contactarte y los datos comerciales de la cuenta. Puedes leer el resumen o pasar a editar. El crédito y el comercial asignado se muestran con los datos de la empresa. Los cambios se conservan solo después de guardar el formulario."
       },
       "edit": {
         "title": "Editar perfil",
-        "description": "Haz clic en Editar perfil para cambiar los datos de la empresa. Ver perfil vuelve a las tarjetas de solo lectura."
+        "description": "Haz clic en Editar perfil para cambiar los datos de la empresa. Las tarjetas se convierten en un formulario. Ver perfil vuelve a las tarjetas de solo lectura. Volver atrás sin guardar descarta las ediciones que no se guardaron."
       },
       "profile": {
         "title": "Resumen de la empresa",
-        "description": "Nombre, contacto, dirección, límite de crédito y el comercial asignado a ti."
+        "description": "Este es el resumen de solo lectura: nombre, contacto, dirección, límite de crédito y el comercial asignado a ti. Úsalo para confirmar lo que hay en la cuenta antes de editar. Las cifras son el perfil guardado. Cambian después de guardar Editar perfil, no mientras el formulario está abierto."
       },
       "details": {
         "title": "Datos de la empresa",
-        "description": "Campos de empresa, contacto y comerciales. Editar perfil convierte esto en el formulario."
+        "description": "Estos son los campos de empresa, contacto y comerciales. Editar perfil convierte esto en el formulario para que puedas cambiarlos. Guardar en ese formulario escribe la cuenta. Hasta que guardes, el resumen sigue mostrando los datos anteriores."
       }
     },
     "visits": {
       "header": {
         "title": "Visitas",
-        "description": "Revisa las visitas que ya registraste. Las grabaciones puntuadas están en Grabaciones de llamadas."
+        "description": "Visitas es el historial de visitas que ya registraste, más el control para iniciar o terminar una. Las grabaciones puntuadas de la llamada en sí se quedan en Grabaciones de llamadas, no en esta página. Abre una visita pasada para actualizarla, o cambia al mapa para ver dónde ocurrieron las visitas. Una visita está en el historial después de terminarla y guardarla."
       },
       "visit-action": {
         "title": "Iniciar o terminar una visita",
-        "description": "Haz clic en Iniciar visita y elige en persona o teléfono. Mientras corre una visita, haz clic en el Terminar visita rojo para añadir notas y el resultado."
+        "description": "Haz clic en Iniciar visita y elige en persona o teléfono. Mientras corre una visita, el mismo control se convierte en el Finalizar visita rojo. Finalizar visita es donde añades notas y el resultado. La visita sigue abierta hasta que la termines. Iniciar una segunda visita no es la forma de cerrar la que está en curso."
       },
       "toolbar": {
         "title": "Filtrar historial",
-        "description": "El intervalo va del día 1 de este mes hasta hoy. Cambia fechas, región, tipo de negocio, compañero o búsqueda. Inicia o termina una visita desde esta fila."
+        "description": "El intervalo empieza en el día 1 de este mes y llega hasta hoy. Cambia fechas, región, tipo de negocio, compañero o búsqueda para mostrar otro conjunto. También puedes iniciar o terminar una visita desde esta fila. La lista y el mapa siguen el filtro. Bórralo para volver al conjunto del mes hasta hoy."
       },
       "history-content": {
         "title": "Lista o mapa",
-        "description": "Haz clic en una fila para actualizar esa visita. Cambia al mapa para ver dónde ocurrieron las visitas."
+        "description": "La lista es una fila por visita. Haz clic en una fila para actualizar esa visita, incluidas las notas y el resultado. Cambia al mapa para ver dónde ocurrieron las visitas con el mismo filtro. El mapa usa las visitas que tienen ubicación. Una visita sin coordenadas sigue en la lista."
       }
     },
     "clients": {
       "header": {
         "title": "Clientes",
-        "description": "Haz clic en Añadir cliente para registrar un cliente de la organización."
+        "description": "Clientes es el registro de clientes de la organización. Haz clic en Añadir cliente para registrar un cliente, y encuéntralo después en las tarjetas. La barra filtra el registro. Abrir una tarjeta muestra el registro completo. Un cliente está en el registro después de guardar el formulario de alta."
       },
       "toolbar": {
         "title": "Filtrar y buscar",
-        "description": "Filtra por estado y categoría. Busca por nombre, correo o teléfono. Haz clic en X en un filtro para borrarlo."
+        "description": "Filtra por estado y categoría, y busca por nombre, correo o teléfono. Las tarjetas de abajo muestran solo las coincidencias. Haz clic en X en un filtro para borrar ese sin quitar los demás. La búsqueda mira esos campos de contacto, no las notas dentro del registro del cliente."
       },
       "grid": {
         "title": "Tarjetas de cliente",
-        "description": "Haz clic en una tarjeta para el registro completo. Haz clic en Cargar más para la página siguiente."
+        "description": "Cada tarjeta es un cliente. Haz clic en una tarjeta para el registro completo, donde puedes leer y actualizar los datos guardados. Haz clic en Cargar más para traer la página siguiente cuando el registro es más largo que lo que hay en pantalla. La tarjeta muestra el cliente guardado. Las ediciones se aplican después de guardarlas en el registro."
       }
     },
     "settings": {
       "header": {
         "title": "Ajustes",
-        "description": "Perfil de la organización, apariencia, horarios, sucursales, calendario, scraping, avisos, banners y calidad de llamadas."
+        "description": "Ajustes guarda el perfil de la organización, la apariencia, los horarios, las sucursales, el calendario, el scraping, los avisos, los banners y la calidad de llamadas. Regional es donde eliges tu idioma. Cada pestaña se guarda por su cuenta, así que un cambio en una pestaña no actualiza las demás hasta que guardes esa pestaña."
       },
       "tab-nav": {
         "title": "Secciones",
-        "description": "Haz clic en una pestaña para editar esa sección. Este tour se queda en la pestaña que ya tienes abierta."
+        "description": "Haz clic en una pestaña para editar esa sección. Perfil, apariencia, horario, sucursales, calendario y las demás pestañas tienen cada una sus campos y su propio guardado. Este tour abre Regional para que veas el menú de idioma. Las demás secciones se quedan como las dejaste hasta que hagas clic en su pestaña."
       },
       "active-panel": {
         "title": "Esta sección",
-        "description": "Edita los campos de la pestaña abierta. No se guarda nada hasta que hagas clic en Guardar cambios."
+        "description": "Estos son los campos de la pestaña que tienes abierta. Cambia lo que necesites y luego usa Guardar cambios al final de la sección. Cancelar, donde se muestra, descarta las ediciones que todavía no están guardadas. Cambiar de pestaña no conserva el texto sin guardar."
       },
       "panel-actions": {
         "title": "Guardar o cancelar",
-        "description": "Guardar cambios conserva esta sección. Cancelar descarta las ediciones no guardadas."
+        "description": "Guardar cambios escribe solo esta sección. Las demás pestañas tienen su propio botón de guardar, así que guardar aquí no publica ediciones que dejaste abiertas en otro sitio. Cancelar descarta las ediciones de esta sección y restaura los últimos valores guardados. Si el botón sigue ocupado, la sección ya se está guardando."
+      },
+      "language": {
+        "title": "Tu idioma",
+        "description": "Este menú define el idioma de toda la app. Auto sigue el idioma o el país de tu dispositivo. Puedes elegir inglés, portugués, francés, español o italiano en su lugar. El mismo menú del encabezado usa este ajuste, así que las páginas, los tours y los botones cambian juntos."
       }
     },
     "leads": {
       "header": {
         "title": "Leads",
-        "description": "Crea un lead, busca en la lista y abre a una persona para el seguimiento."
+        "description": "Leads es donde creas a una persona para el seguimiento, buscas en la lista y la abres para llamar o escribir. Los leads se agrupan por responsable, o quedan en Sin asignar. Importar puede añadir muchos a la vez desde una hoja de cálculo o desde Google Maps. Un lead que creas a mano aparece en la lista después de guardar el formulario."
       },
       "create": {
         "title": "Crear lead",
-        "description": "Haz clic en Crear lead, rellena el formulario y el nuevo lead aparece en la lista."
+        "description": "Haz clic en Crear lead y rellena el formulario. Guárdalo y el lead nuevo aparece en la lista, bajo tu nombre o bajo Sin asignar, según el responsable que definas. Puedes abrir ese lead después para llamarle o escribirle. Cerrar el formulario sin guardar no añade un lead."
       },
       "toolbar": {
         "title": "Filtrar y buscar",
-        "description": "El intervalo de fechas empieza en este mes. Cambia fechas, filtros o búsqueda para mostrar otro conjunto de leads."
+        "description": "El intervalo de fechas empieza en este mes. Cambia las fechas, los demás filtros o la búsqueda para mostrar otro conjunto de leads. Los grupos de abajo siguen ese conjunto. Borra los filtros para volver a este mes. La búsqueda acota a las personas que ya están en el intervalo. No crea un lead."
       },
       "import": {
         "title": "Importar leads",
-        "description": "Haz clic en Importar para añadir leads desde una hoja de cálculo o Google Maps. En Maps, revisa los lugares y asigna responsables antes de que aparezcan en esta lista."
+        "description": "Haz clic en Importar para añadir leads desde una hoja de cálculo o desde Google Maps. En Maps, revisa los lugares y asigna responsables antes de que aparezcan en esta lista. Las filas que omites en esa revisión no se añaden. Una importación de hoja de cálculo usa las columnas que asignas. No inventa responsables."
       },
       "list": {
         "title": "Lista de leads",
-        "description": "Los leads se agrupan por responsable, o Sin asignar. Haz clic en una persona para expandirla. Haz clic en un lead para abrirlo."
+        "description": "Los leads se agrupan por responsable, o por Sin asignar cuando nadie los tiene todavía. Haz clic en una persona para expandir ese grupo y ver cada lead debajo. Haz clic en un lead para abrirlo. Los grupos siguen el intervalo de fechas y los filtros de arriba."
       },
       "expand": {
         "title": "Expandir un grupo",
-        "description": "Haz clic en esta fila. Todos los leads de ese grupo se abren debajo."
+        "description": "Esta fila es un responsable, o Sin asignar. Haz clic en ella y cada lead de ese grupo se abre debajo. Haz clic otra vez para contraer el grupo. Expandir no asigna los leads. Solo los muestra."
       },
       "open": {
         "title": "Abrir un lead",
-        "description": "Haz clic en esta fila. Se abre el detalle del lead."
+        "description": "Esta fila es un lead dentro del grupo. Haz clic en ella y se abre el detalle del lead. Desde ahí puedes llamar, escribir o leer la puntuación. La fila en sí se queda en la lista cuando cierras el detalle."
       },
       "detail": {
         "title": "Detalle del lead",
-        "description": "Inicia o termina una llamada, envíales un mensaje por WhatsApp, correo o SMS y lee la puntuación de la llamada. Cierra el diálogo para volver a la lista."
+        "description": "Desde el lead puedes iniciar o terminar una llamada, escribirle por WhatsApp, correo o SMS, y leer la puntuación de la llamada. Usa las acciones de contacto del canal que de verdad quieres. Cierra el diálogo para volver a la lista. Una llamada que inicias aquí se puntúa con las demás llamadas. El registro de la visita se queda en Visitas."
       }
     },
     "staff": {
       "header": {
         "title": "Personal",
-        "description": "Mira quién está presente o ausente hoy."
+        "description": "Personal muestra quién está presente o ausente hoy, y es donde abres el registro de una persona. Puedes añadir un compañero, enviarle un enlace de incorporación y filtrar las tarjetas por rol, sucursal o país. El reloj de una tarjeta, cuando se muestra, abre el historial de asistencia de esa persona. La exportación de desplazamientos descarga un informe para las fechas que elijas."
       },
       "add": {
         "title": "Añadir un compañero",
-        "description": "Añadir usuario crea una cuenta de personal. Enviar enlace de incorporación les permite terminar el onboarding ellos mismos."
+        "description": "Añadir usuario crea una cuenta de personal que rellenas tú. Enviar enlace de incorporación les deja terminar el onboarding ellos mismos desde el enlace que envías. Usa Añadir usuario cuando ya tienes sus datos. Usa el enlace de incorporación cuando deben completar el formulario. La persona aparece en la cuadrícula después de que exista la cuenta."
       },
       "toolbar": {
         "title": "Filtrar y buscar",
-        "description": "Filtra por estado, rol, plantilla, sucursal o país. Busca por nombre, correo o ID de RR. HH."
+        "description": "Filtra por estado, rol, plantilla, sucursal o país. Busca por nombre, correo o ID de RR. HH. Las tarjetas muestran solo a las personas que coinciden. Borra un filtro para ampliar la cuadrícula otra vez. La búsqueda no recorre las notas de asistencia."
       },
       "grid": {
         "title": "Tarjetas de compañeros",
-        "description": "Haz clic en una tarjeta para el detalle de esa persona. Haz clic en el reloj, cuando se muestre, para su historial de asistencia."
+        "description": "Cada tarjeta es una persona, con si está presente o ausente hoy. Haz clic en una tarjeta para el detalle de esa persona. Haz clic en el reloj, cuando se muestra, para su historial de asistencia. La tarjeta usa la asistencia de hoy. No es el mes completo hasta que abres el historial."
       },
       "travel": {
         "title": "Informe de desplazamientos",
-        "description": "Descarga el libro Excel de esa persona o un PDF día a día para las fechas que elijas."
+        "description": "Descarga el libro Excel de esa persona o un PDF día a día para las fechas que elijas. El archivo cubre el intervalo que eliges, no automáticamente todo el tiempo. Úsalo cuando necesites un registro de desplazamientos de esa persona. La descarga empieza después de que confirmes las fechas."
       }
     },
     "planning": {
       "header": {
         "title": "Planificación",
-        "description": "Tareas, el trabajo de hoy y las rutas del día."
+        "description": "Planificación guarda las tareas, lo que vence hoy y las rutas del día. Crea una tarea y aparece en Todas las tareas. Mi día es el trabajo que vence hoy. Rutas es el día de campo planificado, construido a partir de la importación nocturna del ERP. El botón de información explica cómo se reservan esas rutas."
       },
       "create": {
         "title": "Crear una tarea",
-        "description": "Haz clic en Crear tarea, rellénala y asígnala. Aparece en Todas las tareas."
+        "description": "Haz clic en Crear tarea, rellénala y asígnala. La tarea aparece en Todas las tareas después de guardarla. Si vence hoy, también pertenece a Mi día. Cerrar el formulario sin guardar no añade la tarea."
       },
       "tabs": {
         "title": "Todas las tareas, Mi día, Rutas",
-        "description": "Todas las tareas es la lista completa. Mi día es lo que vence hoy. Rutas es el día de campo planificado."
+        "description": "Todas las tareas es la lista completa que puedes filtrar. Mi día es lo que vence hoy, para que trabajes ese conjunto sin rearmar el filtro. Rutas es el día de campo planificado para la fecha que eliges. Cambiar de pestaña no borra tareas. Eso cambia el conjunto que estás mirando."
       },
       "reminders": {
         "title": "Recordatorios",
-        "description": "En Todas las tareas, esto es lo que vence hoy, atrasado y próximo. Abre un elemento para trabajarlo."
+        "description": "En Todas las tareas, esto agrupa lo que vence hoy, lo que está atrasado y lo que está próximo. Abre un elemento para trabajarlo, actualizar el estado o cambiar el detalle. Los conteos siguen las tareas de la lista actual. Mi día y Rutas no usan esta misma franja de recordatorios."
       },
       "filters": {
         "title": "Filtrar tareas",
-        "description": "Define fecha, estado, prioridad, asignado, cliente, sucursal, solo atrasadas o búsqueda. La lista de abajo se actualiza."
+        "description": "Define fecha, estado, prioridad, asignado, cliente, sucursal, solo atrasadas o búsqueda. La lista de abajo se actualiza para coincidir. Usa solo atrasadas cuando quieras el trabajo atrasado por su cuenta. Borra los filtros para ver la lista más amplia otra vez. Los filtros ocultan filas. No completan una tarea."
       },
       "list": {
         "title": "Lista de tareas",
-        "description": "Haz clic en una tarea para abrirla y actualizar el estado o los detalles."
+        "description": "Cada fila es una tarea del conjunto filtrado. Haz clic en una tarea para abrirla y actualizar el estado o los detalles. La fila muestra la tarea guardada. Los cambios aparecen en la lista después de guardarlos en la tarea. La paginación bajo la lista recorre el resto del conjunto."
       },
       "pagination": {
         "title": "Páginas",
-        "description": "Cambia las filas por página o pasa a la página siguiente."
+        "description": "Cambia las filas por página cuando quieras una lista más larga o más corta. Pasa a la página siguiente para ver el resto de las tareas filtradas. El tamaño de página no cambia qué tareas coinciden con el filtro. Solo cambia cuántas se cargan a la vez."
       },
       "routes": {
         "title": "Rutas",
-        "description": "Elige el día, haz clic en Recalcular para reconstruir las rutas o abre Resumen de competidores para el mapa."
+        "description": "Elige el día en que se planificaron las visitas. Haz clic en Recalcular para reconstruir las rutas de ese día cuando las paradas hay que planificarlas otra vez. Abre Resumen de competidores para el mapa del mismo mundo, incluidas sucursales y competidores. Un día vacío suele significar que elegiste una fecha sin paradas planificadas, o que la sucursal no tiene coordenadas."
       }
     },
     "pipeline": {
       "header": {
         "title": "Pipeline",
-        "description": "Objetivos, cotizaciones, leads y resultados de visitas para el periodo que puedes ver."
+        "description": "Pipeline reúne objetivos, cotizaciones, leads y resultados de visitas en una vista del periodo que puedes ver. Lo que ves sigue tu acceso, así que una vista de equipo y una vista de organización no son el mismo conjunto. Usa las secciones de abajo para leer cada parte. Esta página resume. Crear un lead o una visita sigue haciéndose en esas páginas."
       },
       "targets": {
         "title": "Objetivos",
-        "description": "Progreso en ventas, leads, check-ins y llamadas para el periodo de objetivos actual."
+        "description": "Este bloque es el avance en ventas, leads, check-ins y llamadas del periodo de objetivos actual. Compara lo que se definió con lo que se ha registrado hasta ahora. El periodo es el periodo de objetivos, que puede no coincidir con un intervalo personalizado usado en otro sitio. Abre Informes cuando necesites la tabla completa de objetivos."
       },
       "quotations": {
         "title": "Cotizaciones",
-        "description": "Cambia la ventana de fechas del ERP para cargar líneas de cotización. Compáralas con las cotizaciones LORO del mismo periodo."
+        "description": "Cambia la ventana de fechas del ERP para cargar las líneas de cotización de ese intervalo. Compáralas con las cotizaciones LORO del mismo periodo. La ventana controla qué líneas se cargan. Una cotización fuera de la ventana se queda fuera de esta comparación hasta que amplíes las fechas."
       },
       "leads": {
         "title": "Leads",
-        "description": "Conteos, valor del pipeline y valor de cotización a partir de visitas. Abre un estado para ver el desglose de este intervalo."
+        "description": "Estos son conteos, valor del pipeline y valor de cotización que salieron de visitas en el intervalo. Abre un estado para ver el desglose de ese estado. Las cifras siguen las visitas que puedes ver, no cada lead de la organización. Usa la página Leads para abrir y trabajar a una sola persona."
       },
       "visits": {
         "title": "Visitas",
-        "description": "Totales de check-out en este intervalo: visitas, ventas, cotizaciones y valores."
+        "description": "Estos son los totales de check-out de este intervalo: visitas, ventas, cotizaciones y valores. Resumen las visitas que ya tuvieron check-out, no las visitas que siguen abiertas. Usa la página Visitas para actualizar una sola visita o verla en el mapa. Los totales siguen el periodo y el acceso de esta vista."
       }
     },
     "dashboard-attendance": {
       "clock": {
         "title": "Fichar entrada y salida",
-        "description": "Haz clic aquí para iniciar tu turno, tomar un descanso o terminarlo. El fichaje de entrada pregunta oficina o trabajo desde casa. El pulso puede pedir un check-in breve después de fichar la entrada o la salida."
+        "description": "Haz clic aquí para iniciar tu turno, tomar un descanso o terminarlo. El fichaje de entrada pregunta si estás en la oficina o trabajando desde casa. El pulso puede pedir un check-in breve después de que fiches la entrada o la salida. El día sigue abierto hasta que termines el turno. Un descanso no te ficha la salida."
       },
       "variablePay": {
         "title": "Remuneración variable",
-        "description": "Pago extra además de la comisión de este mes. Muestra qué umbrales están abiertos, qué tan cerca estás del máximo y qué queda."
+        "description": "Esto es un pago extra además de la comisión del mes. Muestra qué umbrales están abiertos, qué tan cerca estás del máximo y qué queda todavía. Los umbrales siguen las reglas de este ciclo, así que un umbral cerrado sigue cerrado hasta que se cumple su condición. El importe es una lectura del avance. No es una nómina."
       },
       "bonus": {
         "title": "Bono de fin de año",
-        "description": "El estado de tu bono de fin de año para el ciclo actual."
+        "description": "Este es el estado de tu bono de fin de año para el ciclo actual. Muestra dónde está el bono, no un pago que ya se haya hecho. El ciclo es el año del bono, que es aparte del mes de asistencia de abajo. Ábrelo cuando necesites el estado. La nómina sigue emitiendo el recibo."
       },
       "month": {
         "title": "Cambiar el mes",
-        "description": "Abre este menú para cambiar entre los últimos tres meses."
+        "description": "Abre este menú para cambiar entre los últimos tres meses. La lista de asistencia de abajo sigue el mes que eliges. Hoy se queda en el control del reloj. Cambiar el mes no cambia el turno que tienes abierto. Solo cambia qué registro estás leyendo."
       },
       "logs": {
         "title": "Ver registros",
-        "description": "Haz clic en Ver registros para el historial de asistencia día a día."
+        "description": "Haz clic en Ver registros para el registro de asistencia día a día del mes que seleccionaste. Úsalo cuando las marcas del resumen no bastan y necesitas las horas. El registro sigue ese mes. No incluye un mes fuera de los tres que puedes seleccionar aquí."
       },
       "list": {
         "title": "Este mes",
-        "description": "Cada día está marcado como asistido, faltado o aún por venir."
+        "description": "Cada día del mes seleccionado está marcado como asistido, faltado o aún por venir. Asistido significa que se registró un turno. Faltado significa que el día pasó sin uno. Los días aún por venir no han ocurrido, así que no son ausencias. Abre Ver registros cuando necesites las horas detrás de una marca."
       }
     },
     "calls": {
       "header": {
         "title": "Grabaciones de llamadas",
-        "description": "Las llamadas PBX (Linkus o teléfono de escritorio) y las llamadas LORO en la app se listan aquí con puntuación y estado de transcripción. Las visitas se quedan en la página Visitas."
+        "description": "Esta lista son llamadas PBX, desde Linkus o un teléfono de escritorio, y llamadas LORO dentro de la app. Cada fila puede mostrar una puntuación y si la transcripción está lista. Las visitas se quedan en la página Visitas. Una visita es el registro de campo. Una grabación es el audio de la llamada y su puntuación."
       },
       "filters": {
         "title": "Filtrar grabaciones",
-        "description": "El intervalo va de este mes hasta hoy. Cambia fecha, estado, dirección, sucursal o búsqueda para acotar la lista."
+        "description": "El intervalo empieza en este mes y llega hasta hoy. Cambia la fecha, el estado, la dirección, la sucursal o la búsqueda para acotar la lista. La dirección separa las entrantes de las salientes. La tabla muestra solo las filas que coinciden. Borra los filtros para volver a la lista del mes hasta hoy."
       },
       "list": {
         "title": "Abrir una grabación",
-        "description": "Haz clic en una fila para la transcripción, la puntuación y el audio."
+        "description": "Haz clic en una fila para la transcripción, la puntuación y el audio. Reproduce el audio desde el detalle cuando necesites oír la llamada. La puntuación es el resultado guardado de esa grabación. Cerrar el detalle te devuelve a la lista filtrada."
       }
     },
     "reports": {
       "header": {
         "title": "Informes",
-        "description": "Objetivos, política, calidad de llamadas, tareas, actividad de leads y actividad para el periodo que permite tu acceso."
+        "description": "Informes cubre objetivos, política, calidad de llamadas, tareas, actividad de leads e Insights para el periodo que permite tu acceso. Cada pestaña es un corte distinto de ese periodo. Tu acceso decide si te ves a ti, a tu equipo o a la organización. Cambiar de pestaña no cambia los registros de fondo en Leads, Visitas o Planificación."
       },
       "tabs": {
         "title": "Pestañas de informe",
-        "description": "Objetivos son las metas. Política es el cumplimiento. Calidad de llamadas son llamadas puntuadas. Insights son agrupaciones de actividad. Tareas y planificación compara visitas planificadas con lo hecho. Actividad de leads son leads importados por estado para cada persona."
+        "description": "Objetivos es el tablero de metas. Política es la puntuación de cumplimiento de visitas y llamadas. Calidad de llamadas son las llamadas puntuadas. Insights agrupa la actividad. Tareas y planificación compara las visitas planificadas con lo que se hizo. Actividad de leads son los leads importados por estado para cada persona. Este tour abre cada pestaña. El intervalo de fechas se queda en la pestaña en la que estás."
+      },
+      "targets": {
+        "title": "Objetivos",
+        "description": "Esta pestaña es el tablero de metas del periodo que permite tu acceso. Busca, filtra y exporta las filas. Cada fila es el objetivo, el avance y la situación de política de una persona. Abre una fila para el detalle. Los números siguen el intervalo de fechas y las sucursales que puedes ver."
+      },
+      "policy": {
+        "title": "Política",
+        "description": "Política puntúa visitas, llamadas y las demás reglas de un mes natural o de un intervalo personalizado. Las tarjetas resumen el periodo. La tabla es una fila por persona, y puedes ordenar, paginar y descargar un CSV. Un intervalo demasiado largo, o un mes que sigue abierto, se marca en la página. Finalizar un mes está limitado a quienes gestionan la organización."
       },
       "callQuality": {
         "title": "Calidad de llamadas",
-        "description": "Ranking, embudo y notas de coaching para llamadas puntuadas en este intervalo."
+        "description": "Calidad de llamadas es el ranking, el embudo y las notas de coaching de las llamadas puntuadas en este intervalo. Úsalo para ver quién puntúa bien y dónde las llamadas salen del embudo. Las notas son para el coaching. No sustituyen la grabación, que se queda en Grabaciones de llamadas. El conjunto sigue el intervalo del informe y las personas que puedes ver."
       },
       "insights": {
         "title": "Insights",
-        "description": "Agrupaciones de trabajo, marcas y a dónde fue el tiempo en el mismo intervalo."
+        "description": "Insights agrupa el trabajo de este intervalo: grupos de actividad, marcas y a dónde fue el tiempo. Úsalo para ver patrones, no para editar una sola visita o tarea. Una marca es un aviso para mirar más de cerca. No cambia el registro de fondo. El mismo intervalo rige las demás pestañas del informe."
+      },
+      "tasks": {
+        "title": "Tareas y planificación",
+        "description": "Esta pestaña compara las visitas planificadas con lo que se hizo de verdad en el mismo intervalo. Úsala para ver qué paradas planificadas se completaron, se perdieron o siguen abiertas. Las cifras siguen las fechas del informe y las personas que puedes ver. No sustituye a Planificación, donde creas y editas las tareas."
+      },
+      "leadsActivity": {
+        "title": "Actividad de leads",
+        "description": "Los leads importados se agrupan por estado para cada persona en este intervalo. Úsalo para ver quién mueve leads y qué estados están atascados. Abre la página Leads para crear, importar o trabajar un solo lead. Esta pestaña es el resumen, no la lista de trabajo."
       }
     },
     "merchandise": {
       "header": {
         "title": "Merchandising",
-        "description": "Fotos y notas de campo, con estado de revisión en cada registro."
+        "description": "Merchandising es el registro de fotos y notas de campo, con un estado de revisión en cada entrada. Un registro nuevo se queda en revisión hasta que se publica. Filtra la lista, o abre una fila para la foto completa y las acciones de revisión. La foto se adjunta cuando creas el registro. Publicar es un paso posterior."
       },
       "create": {
         "title": "Nuevo merchandising",
-        "description": "Haz clic en Nuevo merchandising. Adjunta una foto, indica el cliente y añade comentarios. El registro permanece en revisión hasta que se publique."
+        "description": "Haz clic en Nuevo merchandising. Adjunta una foto, indica el cliente y añade comentarios, luego guarda. El registro se queda en revisión hasta que se publica, así que todavía no se trata como definitivo. Puedes abrirlo desde la lista para revisarlo. Cerrar el formulario sin guardar no añade un registro."
       },
       "filters": {
         "title": "Filtrar registros",
-        "description": "Filtra por fecha, tamaño de página, sucursal, compañero, estado o búsqueda."
+        "description": "Filtra por fecha, tamaño de página, sucursal, compañero, estado o búsqueda. La lista muestra solo los registros que coinciden, incluidos los que siguen en revisión si ese estado está incluido. Borra un filtro para ampliar la lista. El tamaño de página cambia cuántas filas se cargan, no qué registros existen."
       },
       "list": {
         "title": "Abrir un registro",
-        "description": "Haz clic en una fila para la foto completa y las acciones de revisión."
+        "description": "Haz clic en una fila para la foto completa y las acciones de revisión. Desde ahí puedes leer las notas y avanzar la revisión, incluido publicar cuando te esté permitido. El estado de la fila se actualiza después de guardar esa acción. La foto es la que está adjunta al registro."
       }
     },
     "assets": {
       "header": {
         "title": "Activos",
-        "description": "Tu equipo y vehículos vinculados, o el inventario completo de la organización si lo gestionas. Los gestores cambian ese alcance en los filtros."
+        "description": "Activos lista equipo y vehículos. Ves los elementos vinculados a ti, o el inventario de toda la organización si lo gestionas. Los gestores cambian ese alcance en los filtros. Abre una tarjeta para los detalles de compra y de seguro, o añade un activo cuando se entrega algo nuevo. El registro es el inventario guardado, no una lista de deseos."
       },
       "add": {
         "title": "Añadir un activo",
-        "description": "Haz clic en Añadir activo. Registra el elemento, quién lo posee y a qué sucursal pertenece."
+        "description": "Haz clic en Añadir activo. Registra el elemento, quién lo posee y a qué sucursal pertenece, luego guarda. La tarjeta aparece en la cuadrícula de ese alcance. El activo no está en el inventario hasta que se guarda el formulario."
       },
       "filters": {
         "title": "Filtrar el inventario",
-        "description": "Filtra por fecha, sucursal, propietario, categoría o búsqueda. El tamaño de página bajo la cuadrícula define cuántas tarjetas se cargan."
+        "description": "Filtra por fecha, sucursal, propietario, categoría o búsqueda. Los gestores también pueden cambiar entre sus elementos vinculados y el inventario más amplio. El tamaño de página bajo la cuadrícula define cuántas tarjetas se cargan. Borra los filtros para ver el conjunto más amplio que permite tu acceso."
       },
       "list": {
         "title": "Abrir un activo",
-        "description": "Haz clic en una tarjeta para los detalles de compra y seguro, o para editarlo y eliminarlo."
+        "description": "Haz clic en una tarjeta para los detalles de compra y de seguro. Cuando gestionas el elemento puedes editarlo o eliminarlo desde ahí. Eliminar lo quita del inventario. Los campos de seguro y de compra son lo que se guardó en el activo, no una consulta en vivo de la póliza."
       }
     },
     "performance": {
       "header": {
         "title": "Rendimiento",
-        "description": "Ventas de los países, sucursales y fechas que puedes ver. El título cambia a Estado consolidado cuando esa vista está activa."
+        "description": "Rendimiento son las ventas de los países, las sucursales y las fechas que puedes ver. El título cambia a Estado consolidado cuando esa vista está activa, porque la página muestra entonces el estado de resultados en lugar del informe de rendimiento. Define el intervalo y los filtros antes de leer los gráficos. Actualizar trae las cifras más recientes del servidor."
       },
       "filters": {
         "title": "Fechas y filtros",
-        "description": "Define el intervalo de fechas. Abre los filtros para país, sucursal y categoría. Haz clic en actualizar para obtener los números más recientes."
+        "description": "Define primero el intervalo de fechas. Abre los filtros de país, sucursal y categoría cuando necesites un corte más pequeño. Haz clic en Actualizar para traer las cifras más recientes de esa selección. El resumen y los gráficos siguen los mismos filtros. Una sucursal a la que no puedes acceder se queda fuera de la lista."
       },
       "consolidated": {
         "title": "Estado consolidado",
-        "description": "Activa esto para el estado de resultados entre países y sucursales. Desactívalo para volver al informe de rendimiento."
+        "description": "Activa esto para el estado de resultados entre los países y las sucursales del filtro. Desactívalo para volver al informe de rendimiento, con objetivo, beneficio bruto y los gráficos. El intervalo de fechas se queda en su sitio en ambos casos. El estado es una vista del mismo periodo, no otra contabilidad que edites aquí."
       },
       "target": {
         "title": "Objetivo y beneficio bruto",
-        "description": "Ingresos frente al objetivo, y beneficio bruto, para este intervalo."
+        "description": "Estas cifras son los ingresos frente al objetivo, y el beneficio bruto, del intervalo y los filtros que definiste. Úsalas como el titular antes de leer los gráficos. Siguen las cifras actualizadas. Cambiar un filtro sin actualizar puede dejar la consulta anterior en pantalla hasta que actualices."
       },
       "charts": {
         "title": "Gráficos",
-        "description": "Categoría, sucursal, mezcla de pagos, productos, vendedores y ventas por hora para los filtros que definiste."
+        "description": "Los gráficos desglosan la misma selección en categoría, sucursal, mezcla de pagos, productos, vendedores y ventas por hora. Úsalos para ver dónde están los ingresos, no para editar una transacción. Siguen los filtros y la última actualización. Estado consolidado sustituye esta vista mientras está activo."
       }
     },
     "wellbeing": {
       "header": {
         "title": "Bienestar",
-        "description": "Check-ins de humor, seguimientos y cómo el humor se alinea con el rendimiento."
+        "description": "Bienestar lee los check-ins de humor, los seguimientos y cómo el humor se alinea con el rendimiento. Hoy es el día en directo. Insights, Ejecutivo y Correlaciones usan el intervalo de fechas y la sucursal que defines. Estas vistas son estimaciones para ayudarte a notar a las personas. No son un diagnóstico y no demuestran una causa."
       },
       "filters": {
         "title": "Fecha y sucursal",
-        "description": "Insights, Ejecutivo y Correlaciones usan este intervalo de fechas y sucursal. Hoy ignora el intervalo."
+        "description": "Insights, Ejecutivo y Correlaciones usan este intervalo de fechas y esta sucursal. Cámbialos antes de leer esas pestañas, porque los gráficos y los hallazgos siguen la selección. Hoy ignora el intervalo y se queda en el día en directo. Una sucursal fuera de tu acceso no está en la lista."
       },
       "tabs": {
         "title": "Hoy, Insights, Ejecutivo, Correlaciones",
-        "description": "Hoy son check-ins en directo. Insights resume el intervalo. Ejecutivo son los gráficos de índice. Correlaciones compara el humor con el rendimiento. Son estimaciones, no causas."
+        "description": "Hoy son los check-ins en directo y las personas que necesitan apoyo. Insights resume el intervalo. Ejecutivo son los gráficos de índice. Correlaciones compara el humor con el rendimiento. Admin, cuando puedes verlo, es donde se registran los seguimientos. Son estimaciones, no causas, y no sustituyen una conversación con la persona."
       },
       "today": {
         "title": "Hoy",
-        "description": "KPIs, comparación de sucursales y listas nominativas de personas que necesitan apoyo o un seguimiento."
+        "description": "Hoy muestra los KPIs en directo, una comparación de sucursales y listas nominativas de personas que necesitan apoyo o un seguimiento. Los números son de este día, no del intervalo de la barra. Abre a una persona cuando necesites actuar. Registrar el resultado se hace en Admin, no en esta lista."
+      },
+      "insights": {
+        "title": "Insights",
+        "description": "Insights resume el humor del intervalo de fechas y de la sucursal que definiste arriba. Cada tarjeta es un hallazgo, marcado como positivo, requiere atención o requiere acción. La etiqueta te dice si el texto vino del modelo o de las reglas fijas. Son resúmenes de los check-ins, no un diagnóstico."
       },
       "executive": {
         "title": "Índice ejecutivo",
-        "description": "Cada gráfico es un índice agregado para el intervalo y la sucursal que definiste."
+        "description": "Cada gráfico es un índice agregado del intervalo y de la sucursal que definiste. Léelos juntos para ver la forma del periodo, no la historia de una sola persona. El índice es una puntuación de resumen. No nombra a quién necesita un seguimiento. Usa Hoy o Admin para las personas con nombre."
+      },
+      "correlations": {
+        "title": "Correlaciones",
+        "description": "Correlaciones compara el humor con el rendimiento del mismo intervalo y de la misma sucursal. Cada fila es un hallazgo, con el tamaño de la diferencia, a cuántas personas cubre y qué tan segura es la comparación. Una diferencia más grande no es una causa. Trata la tabla como un aviso para mirar más de cerca, no como una prueba."
+      },
+      "admin": {
+        "title": "Seguimiento",
+        "description": "Admin lista a las personas que pidieron apoyo o que están marcadas como de mayor riesgo. Abre a una persona para registrar cómo hiciste el seguimiento. La nota se queda en esta página para el día seleccionado. Úsala después de haber hablado con esa persona. No sustituye un apercibimiento formal ni una solicitud de ausencia."
       }
     },
     "visualiser": {
       "header": {
         "title": "Resumen de competidores",
-        "description": "Busca en el mapa o sigue la ruta de un comercial. Abre Simular para modelar un área de captación."
+        "description": "Resumen de competidores es el mapa de sucursales, sede, competidores y clientes. Busca en el mapa o sigue la ruta de un comercial. Abre Simular para modelar un área de captación y ver qué podría sostener la zona. Las geocercas que creaste también se dibujan aquí. El mapa lee ubicaciones guardadas. No edita un registro de cliente."
       },
       "tools": {
         "title": "Herramientas del mapa",
-        "description": "El resumen cuenta tiendas competidoras y el volumen de negocio mensual modelado. Precios de combustible carga los últimos precios y conserva los guardados cuando no cambió nada. Geocodificar rellena direcciones faltantes. Exportar descarga la simulación. El icono de información explica el cálculo. Simular abre el diálogo de simulación."
+        "description": "Resumen cuenta tiendas competidoras y el volumen de negocio mensual modelado. Precios de gasolina carga los últimos precios de combustible y conserva los precios guardados cuando no cambió nada. Geocodificar rellena las direcciones que faltan para poder colocar los pines. Exportar descarga la simulación. El icono de información explica el cálculo. Simular abre el diálogo de simulación, y el resultado sigue siendo un modelo hasta que lo exportes o lo guardes desde ese diálogo."
       },
       "map": {
         "title": "El mapa",
-        "description": "Los pines son sucursales, sede, competidores y clientes."
+        "description": "Los pines son sucursales, sede, competidores y clientes. Elige un pin para leer qué es. Un pin que falta suele significar que la dirección todavía no se geocodificó. Usa Geocodificar en las herramientas cuando las direcciones están vacías. Las rutas y las simulaciones se dibujan encima de estos pines. No mueven la dirección guardada de un cliente."
       }
     }
   },

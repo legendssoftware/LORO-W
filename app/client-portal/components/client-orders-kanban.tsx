@@ -1,9 +1,13 @@
 'use client';
 
 import { useMemo } from 'react';
+import Link from 'next/link';
+import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
 import type { ComponentType } from 'react';
 import type { ClientQuotation } from '@/api/types/client-portal';
+import { orderTitle } from '@/lib/client-order-actions';
+import { OrderActionsMenu } from '@/app/orders/components/order-actions-menu';
 import {
   formatZar,
   parseQuotationAmount,
@@ -20,43 +24,29 @@ import { cn } from '@/lib/utils';
 
 type IconComponent = ComponentType<{ className?: string; size?: number }>;
 
-function OrderKanbanCard({
-  quotation,
-  onSelect,
-}: {
-  quotation: ClientQuotation;
-  onSelect: (q: ClientQuotation) => void;
-}) {
-  const title =
-    quotation.quotationNumber ??
-    quotation.orderNumber ??
-    quotation.title ??
-    `Quotation #${quotation.uid}`;
-
+function OrderKanbanCard({ quotation }: { quotation: ClientQuotation }) {
   return (
-    <button
-      type="button"
-      className={cn(
-        'w-full rounded border bg-card p-3 text-left transition-colors',
-        'hover:bg-muted/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring'
-      )}
-      onClick={() => onSelect(quotation)}
-    >
-      <p className="font-medium text-sm leading-snug line-clamp-2">{title}</p>
-      <p className="text-xs text-muted-foreground mt-1">
-        {quotation.createdAt
-          ? format(new Date(quotation.createdAt), 'dd MMM yyyy')
-          : '—'}
-      </p>
-      <p className="text-sm font-semibold mt-2">
-        {formatZar(parseQuotationAmount(quotation.totalAmount))}
-      </p>
-      {quotation.isClientPlaced && (
-        <Badge variant="outline" className="mt-2 text-xs">
-          Client placed
-        </Badge>
-      )}
-    </button>
+    <div className="rounded border bg-card p-3">
+      <div className="flex items-start justify-between gap-2">
+        <Link
+          href={`/orders/${quotation.uid}`}
+          className="min-w-0 flex-1 rounded text-left hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        >
+          <p className="font-medium text-sm leading-snug line-clamp-2">{orderTitle(quotation)}</p>
+        </Link>
+        <OrderActionsMenu order={quotation} />
+      </div>
+      <Link href={`/orders/${quotation.uid}`} className="mt-1 block">
+        <p className="text-xs text-muted-foreground">
+          {quotation.createdAt
+            ? format(new Date(quotation.createdAt), 'dd MMM yyyy')
+            : '—'}
+        </p>
+        <p className="text-sm font-semibold mt-2">
+          {formatZar(parseQuotationAmount(quotation.totalAmount))}
+        </p>
+      </Link>
+    </div>
   );
 }
 
@@ -65,13 +55,11 @@ function KanbanColumn({
   label,
   icon: Icon,
   items,
-  onSelect,
 }: {
   columnKey: string;
   label: string;
   icon?: IconComponent;
   items: ClientQuotation[];
-  onSelect: (q: ClientQuotation) => void;
 }) {
   return (
     <div
@@ -97,7 +85,7 @@ function KanbanColumn({
           </p>
         ) : (
           items.map((q) => (
-            <OrderKanbanCard key={q.uid} quotation={q} onSelect={onSelect} />
+            <OrderKanbanCard key={q.uid} quotation={q} />
           ))
         )}
       </div>
@@ -107,11 +95,10 @@ function KanbanColumn({
 
 export function ClientOrdersKanban({
   quotations,
-  onSelect,
 }: {
   quotations: ClientQuotation[];
-  onSelect: (q: ClientQuotation) => void;
 }) {
+  const { t } = useTranslation('portal');
   const grouped = useMemo(
     () => groupQuotationsByKanbanColumn(quotations),
     [quotations]
@@ -123,7 +110,10 @@ export function ClientOrdersKanban({
     return (
       <Card>
         <CardContent className="py-12 text-center text-sm text-muted-foreground">
-          No quotations yet. Visit the store to place an order.
+          <p>{t('noClientOrders')}</p>
+          <Link href="/store" className="mt-3 inline-block text-primary underline-offset-4 hover:underline">
+            {t('placeOrder')}
+          </Link>
         </CardContent>
       </Card>
     );
@@ -139,14 +129,12 @@ export function ClientOrdersKanban({
             label={col.label}
             icon={col.icon}
             items={grouped.get(col.value) ?? []}
-            onSelect={onSelect}
           />
         ))}
         <KanbanColumn
           columnKey={OTHER_KANBAN_COLUMN.value}
           label={OTHER_KANBAN_COLUMN.label}
           items={otherItems}
-          onSelect={onSelect}
         />
       </div>
     </div>
